@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ inputs.runner || 'ubuntu-22.04' }}
     steps:
       - name: Checkout libocpp
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: source
       - name: Run clang-format
@@ -31,7 +31,7 @@ jobs:
     runs-on: ${{ inputs.runner || 'ubuntu-22.04' }}
     steps:
       - name: Checkout libocpp
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: source
       - name: Setup run scripts
