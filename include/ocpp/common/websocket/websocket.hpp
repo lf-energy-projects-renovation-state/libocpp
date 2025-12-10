@@ -26,7 +26,7 @@ public:
     /// \brief Creates a new Websocket object with the provided \p connection_options
     explicit Websocket(const WebsocketConnectionOptions& connection_options,
                        std::shared_ptr<EvseSecurity> evse_security, std::shared_ptr<MessageLogging> logging);
-    ~Websocket();
+    ~Websocket() = default;
 
     /// \brief Starts the connection attempts. It will init the websocket processing thread
     /// \returns true if the websocket is successfully initialized, false otherwise. Does
@@ -66,7 +66,7 @@ public:
 
     /// \brief set the websocket ping interval \p ping_interval_s in seconds and pong timeout \p pong_interval_s in
     /// seconds
-    void set_websocket_ping_interval(int32_t ping_interval_s, int32_t pong_interval_s);
+    void set_websocket_ping_interval(std::int32_t ping_interval_s, std::int32_t pong_interval_s);
 
     /// \brief set the \p authorization_key of the connection_options
     void set_authorization_key(const std::string& authorization_key);

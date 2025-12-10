@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2020 - 2024 Pionix GmbH and Contributors to EVerest
+// Copyright 2020 - 2025 Pionix GmbH and Contributors to EVerest
 // This code is generated using the generator in 'src/code_generator/common`, please do not edit manually
 
 #ifndef OCPP_V16_SENDLOCALLIST_HPP
@@ -17,7 +17,7 @@ namespace v16 {
 
 /// \brief Contains a OCPP SendLocalList message
 struct SendLocalListRequest : public ocpp::Message {
-    int32_t listVersion;
+    std::int32_t listVersion;
     UpdateType updateType;
     std::optional<std::vector<LocalAuthorizationList>> localAuthorizationList;
 

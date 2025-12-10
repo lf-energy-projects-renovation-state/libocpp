@@ -36,7 +36,7 @@ void ocpp::v2::MeterValues::update_aligned_data_interval() {
             if (this->context.device_model
                     .get_optional_value<bool>(ControllerComponentVariables::AlignedDataSendDuringIdle)
                     .value_or(false)) {
-                for (auto const& evse : this->context.evse_manager) {
+                for (const auto& evse : this->context.evse_manager) {
                     if (evse.has_active_transaction()) {
                         return;
                     }
@@ -87,7 +87,7 @@ void ocpp::v2::MeterValues::update_aligned_data_interval() {
         interval, std::chrono::floor<date::days>(date::utc_clock::to_sys(date::utc_clock::now())));
 }
 
-void ocpp::v2::MeterValues::on_meter_value(const int32_t evse_id, const MeterValue& meter_value) {
+void ocpp::v2::MeterValues::on_meter_value(const std::int32_t evse_id, const MeterValue& meter_value) {
     if (evse_id == 0) {
         // if evseId = 0 then store in the chargepoint metervalues
         this->aligned_data_evse0.set_values(meter_value);
@@ -107,12 +107,12 @@ ocpp::v2::MeterValues::get_latest_meter_value_filtered(const MeterValue& meter_v
     return filtered_meter_value;
 }
 
-void ocpp::v2::MeterValues::meter_values_req(const int32_t evse_id, const std::vector<MeterValue>& meter_values,
+void ocpp::v2::MeterValues::meter_values_req(const std::int32_t evse_id, const std::vector<MeterValue>& meter_values,
                                              const bool initiated_by_trigger_message) {
     MeterValuesRequest req;
     req.evseId = evse_id;
     req.meterValue = meter_values;
 
-    ocpp::Call<MeterValuesRequest> call(req);
+    const ocpp::Call<MeterValuesRequest> call(req);
     this->context.message_dispatcher.dispatch_call(call, initiated_by_trigger_message);
 }

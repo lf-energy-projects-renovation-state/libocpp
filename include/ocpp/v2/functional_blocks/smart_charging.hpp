@@ -11,8 +11,8 @@ namespace ocpp::v2 {
 struct FunctionalBlockContext;
 class SmartChargingHandlerInterface;
 
-typedef std::function<RequestStartStopStatusEnum(const int32_t evse_id, const ReasonEnum& stop_reason)>
-    StopTransactionCallback;
+using StopTransactionCallback =
+    std::function<RequestStartStopStatusEnum(const std::int32_t evse_id, const ReasonEnum& stop_reason)>;
 
 struct LimitsSetpointsForOperationMode;
 
@@ -28,7 +28,7 @@ struct NotifyEVChargingNeedsRequest;
 struct NotifyEVChargingNeedsResponse;
 
 /// \brief Different types of limits and setpoints, used in the limits_setpoints_per_operation_mode map.
-enum LimitSetpointType {
+enum class LimitSetpointType {
     Limit,
     DischargeLimit,
     Setpoint,
@@ -87,6 +87,12 @@ enum class AddChargingProfileSource {
     RequestStartTransactionRequest
 };
 
+///
+/// \brief validates requirements that apply only to the ChargingStationMaxProfile \p profile
+/// according to the specification
+///
+ProfileValidationResultEnum validate_charging_station_max_profile(const ChargingProfile& profile, std::int32_t evse_id);
+
 namespace conversions {
 /// \brief Converts the given ProfileValidationResultEnum \p e to human readable string
 /// \returns a string representation of the ProfileValidationResultEnum
@@ -101,7 +107,7 @@ std::ostream& operator<<(std::ostream& os, const ProfileValidationResultEnum val
 
 class SmartChargingInterface : public MessageHandlerInterface {
 public:
-    virtual ~SmartChargingInterface() = default;
+    ~SmartChargingInterface() override = default;
 
     /// \brief Gets composite schedules for all evse_ids (including 0) for the given \p duration and \p unit . If no
     /// valid profiles are given for an evse for the specified period, the composite schedule will be empty for this
@@ -109,7 +115,7 @@ public:
     /// \param duration of the request from. Composite schedules will be retrieved from now to (now + duration)
     /// \param unit of the period entries of the composite schedules
     /// \return vector of composite schedules, one for each evse_id including 0.
-    virtual std::vector<CompositeSchedule> get_all_composite_schedules(const int32_t duration,
+    virtual std::vector<CompositeSchedule> get_all_composite_schedules(const std::int32_t duration,
                                                                        const ChargingRateUnitEnum& unit) = 0;
 
     ///
@@ -122,7 +128,7 @@ public:
     /// adding it to our stored list of profiles if valid.
     ///
     virtual SetChargingProfileResponse conform_validate_and_add_profile(
-        ChargingProfile& profile, int32_t evse_id,
+        ChargingProfile& profile, std::int32_t evse_id,
         CiString<20> charging_limit_source = ChargingLimitSourceEnumStringType::CSO,
         AddChargingProfileSource source_of_request = AddChargingProfileSource::SetChargingProfile) = 0;
 
@@ -132,7 +138,7 @@ public:
     /// to a representation that fits the spec.
     ///
     virtual ProfileValidationResultEnum conform_and_validate_profile(
-        ChargingProfile& profile, int32_t evse_id,
+        ChargingProfile& profile, std::int32_t evse_id,
         AddChargingProfileSource source_of_request = AddChargingProfileSource::SetChargingProfile) = 0;
 
     /// \brief Gets a composite schedule based on the given \p request
@@ -147,7 +153,7 @@ public:
     /// \param duration How long the schedule should be
     /// \param unit ChargingRateUnit to thet the schedule for
     /// \return the composite schedule if the operation was successful, otherwise nullopt
-    virtual std::optional<CompositeSchedule> get_composite_schedule(int32_t evse_id, std::chrono::seconds duration,
+    virtual std::optional<CompositeSchedule> get_composite_schedule(std::int32_t evse_id, std::chrono::seconds duration,
                                                                     ChargingRateUnitEnum unit) = 0;
 
     /// \brief Initiates a NotifyEvChargingNeeds.req message to the CSMS
@@ -168,19 +174,19 @@ public:
                   StopTransactionCallback stop_transaction_callback);
     void handle_message(const ocpp::EnhancedMessage<MessageType>& message) override;
     GetCompositeScheduleResponse get_composite_schedule(const GetCompositeScheduleRequest& request) override;
-    std::optional<CompositeSchedule> get_composite_schedule(int32_t evse_id, std::chrono::seconds duration,
+    std::optional<CompositeSchedule> get_composite_schedule(std::int32_t evse_id, std::chrono::seconds duration,
                                                             ChargingRateUnitEnum unit) override;
-    std::vector<CompositeSchedule> get_all_composite_schedules(const int32_t duration,
+    std::vector<CompositeSchedule> get_all_composite_schedules(const std::int32_t duration,
                                                                const ChargingRateUnitEnum& unit) override;
 
     void delete_transaction_tx_profiles(const std::string& transaction_id) override;
 
     SetChargingProfileResponse conform_validate_and_add_profile(
-        ChargingProfile& profile, int32_t evse_id,
+        ChargingProfile& profile, std::int32_t evse_id,
         CiString<20> charging_limit_source = ChargingLimitSourceEnumStringType::CSO,
         AddChargingProfileSource source_of_request = AddChargingProfileSource::SetChargingProfile) override;
     ProfileValidationResultEnum conform_and_validate_profile(
-        ChargingProfile& profile, int32_t evse_id,
+        ChargingProfile& profile, std::int32_t evse_id,
         AddChargingProfileSource source_of_request = AddChargingProfileSource::SetChargingProfile) override;
     void notify_ev_charging_needs_req(const NotifyEVChargingNeedsRequest& req) override;
 
@@ -189,31 +195,24 @@ protected:
     /// \brief Calculates the composite schedule for the given \p valid_profiles and the given \p connector_id
     ///
     CompositeSchedule calculate_composite_schedule(const ocpp::DateTime& start_time, const ocpp::DateTime& end_time,
-                                                   const int32_t evse_id, ChargingRateUnitEnum charging_rate_unit,
+                                                   const std::int32_t evse_id, ChargingRateUnitEnum charging_rate_unit,
                                                    bool is_offline, bool simulate_transaction_active);
 
     ///
     /// \brief validates the existence of the given \p evse_id according to the specification
     ///
-    ProfileValidationResultEnum validate_evse_exists(int32_t evse_id) const;
-
-    ///
-    /// \brief validates requirements that apply only to the ChargingStationMaxProfile \p profile
-    /// according to the specification
-    ///
-    ProfileValidationResultEnum validate_charging_station_max_profile(const ChargingProfile& profile,
-                                                                      int32_t evse_id) const;
+    ProfileValidationResultEnum validate_evse_exists(std::int32_t evse_id) const;
 
     ///
     /// \brief validates the given \p profile and associated \p evse_id according to the specification
     ///
-    ProfileValidationResultEnum validate_tx_default_profile(const ChargingProfile& profile, int32_t evse_id) const;
+    ProfileValidationResultEnum validate_tx_default_profile(const ChargingProfile& profile, std::int32_t evse_id) const;
 
     ///
     /// \brief validates the given \p profile according to the specification
     ///
     ProfileValidationResultEnum validate_tx_profile(
-        const ChargingProfile& profile, int32_t evse_id,
+        const ChargingProfile& profile, std::int32_t evse_id,
         AddChargingProfileSource source_of_request = AddChargingProfileSource::SetChargingProfile) const;
 
     ///
@@ -223,7 +222,7 @@ protected:
     /// \return ProfileValidationResultEnum::Valid if valid.
     ///
     ProfileValidationResultEnum validate_priority_charging_profile(const ChargingProfile& profile,
-                                                                   int32_t evse_id) const;
+                                                                   std::int32_t evse_id) const;
 
     /// \brief validates that the given \p profile has valid charging schedules.
     /// If a profiles charging schedule period does not have a valid numberPhases,
@@ -240,7 +239,7 @@ protected:
     ///
     /// \brief Adds a given \p profile and associated \p evse_id to our stored list of profiles
     ///
-    SetChargingProfileResponse add_profile(ChargingProfile& profile, int32_t evse_id,
+    SetChargingProfileResponse add_profile(ChargingProfile& profile, std::int32_t evse_id,
                                            CiString<20> charging_limit_source = ChargingLimitSourceEnumStringType::CSO);
 
     ///
@@ -258,12 +257,13 @@ protected:
     /// response.
     ///
     std::vector<ChargingProfile>
-    get_valid_profiles(int32_t evse_id, const std::vector<ChargingProfilePurposeEnum>& purposes_to_ignore = {});
+    get_valid_profiles(std::int32_t evse_id, const std::vector<ChargingProfilePurposeEnum>& purposes_to_ignore = {});
 
 private: // Functions
     /* OCPP message requests */
-    void report_charging_profile_req(const int32_t request_id, const int32_t evse_id, const CiString<20> source,
-                                     const std::vector<ChargingProfile>& profiles, const bool tbc);
+    void report_charging_profile_req(const std::int32_t request_id, const std::int32_t evse_id,
+                                     const CiString<20> source, const std::vector<ChargingProfile>& profiles,
+                                     const bool tbc);
     void report_charging_profile_req(const ReportChargingProfilesRequest& req);
 
     /* OCPP message handlers */
@@ -276,31 +276,19 @@ private: // Functions
     GetCompositeScheduleResponse get_composite_schedule_internal(const GetCompositeScheduleRequest& request,
                                                                  bool simulate_transaction_active = true);
 
-    /// \brief validates that the given \p profile from a RequestStartTransactionRequest is of the correct type
-    /// TxProfile
-    ProfileValidationResultEnum validate_request_start_transaction_profile(const ChargingProfile& profile) const;
-
     ///
     /// \brief Checks a given \p candidate_profile and associated \p evse_id validFrom and validTo range
     /// This method assumes that the existing candidate_profile will have dates set for validFrom and validTo
     ///
-    bool is_overlapping_validity_period(const ChargingProfile& candidate_profile, int32_t candidate_evse_id) const;
+    bool is_overlapping_validity_period(const ChargingProfile& candidate_profile, std::int32_t candidate_evse_id) const;
 
     std::vector<ChargingProfile> get_evse_specific_tx_default_profiles() const;
     std::vector<ChargingProfile> get_station_wide_tx_default_profiles() const;
     std::vector<ChargingProfile> get_charging_station_max_profiles() const;
     std::vector<ChargingProfile>
-    get_valid_profiles_for_evse(int32_t evse_id,
+    get_valid_profiles_for_evse(std::int32_t evse_id,
                                 const std::vector<ChargingProfilePurposeEnum>& purposes_to_ignore = {});
-    /// \brief sets attributes of the given \p charging_schedule_period according to the specification.
-    /// 2.11. ChargingSchedulePeriodType if absent numberPhases set to 3
-    void conform_schedule_number_phases(int32_t profile_id, ChargingSchedulePeriod& charging_schedule_period) const;
-    ///
-    /// \brief sets attributes of the given \p profile according to the specification.
-    /// 2.10. ChargingProfileType validFrom if absent set to current date
-    /// 2.10. ChargingProfileType validTo if absent set to max date
-    ///
-    void conform_validity_periods(ChargingProfile& profile) const;
+
     CurrentPhaseType get_current_phase_type(const std::optional<EvseInterface*> evse_opt) const;
 
     ///
@@ -325,14 +313,14 @@ private: // Functions
     /// \param evse_id  The evse id. Can also be 0.
     /// \return True if evse has DCInputPhaseControl enabled.
     ///
-    bool has_dc_input_phase_control(const int32_t evse_id) const;
+    bool has_dc_input_phase_control(const std::int32_t evse_id) const;
 
     ///
     /// \brief Check if DCInputPhaseControl is enabled for this evse id.
     /// \param evse_id  The evse id. Should not be 0.
     /// \return True if evse has DCInputPhaseControl enabled.
     ///
-    bool evse_has_dc_input_phase_control(const int32_t evse_id) const;
+    bool evse_has_dc_input_phase_control(const std::int32_t evse_id) const;
 };
 
 ///

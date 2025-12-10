@@ -24,11 +24,11 @@ struct FormattedMessageWithType {
 struct LogRotationConfig {
     bool date_suffix; ///< If set to true the log rotation files use a date after the ".", if not use the traditional
                       ///< .0, .1 ... style
-    uint64_t
+    std::uint64_t
         maximum_file_size_bytes; ///< The maximum size of the log file in bytes after which the file will be rotated
-    uint64_t maximum_file_count; ///< The maximum number of log files to keep in rotation
+    std::uint64_t maximum_file_count; ///< The maximum number of log files to keep in rotation
 
-    LogRotationConfig(bool date_suffix, uint64_t maximum_file_size_bytes, uint64_t maximum_file_count) :
+    LogRotationConfig(bool date_suffix, std::uint64_t maximum_file_size_bytes, std::uint64_t maximum_file_count) :
         date_suffix(date_suffix),
         maximum_file_size_bytes(maximum_file_size_bytes),
         maximum_file_count(maximum_file_count) {
@@ -79,8 +79,8 @@ private:
     bool rotate_logs;
     bool date_suffix;
     std::string logfile_basename;
-    uint64_t maximum_file_size_bytes;
-    uint64_t maximum_file_count;
+    std::uint64_t maximum_file_size_bytes;
+    std::uint64_t maximum_file_count;
 
     /// \brief Initialize the OCPP message logging
     void initialize();
@@ -90,18 +90,6 @@ private:
 
     /// \brief Format the given \p json_str with the given \p message_type
     FormattedMessageWithType format_message(const std::string& message_type, const std::string& json_str);
-
-    /// \brief Add opening html tags to the given stream \p os
-    void open_html_tags(std::ofstream& os);
-
-    /// \brief Add closing html tags to the given stream \p os
-    void close_html_tags(std::ofstream& os);
-
-    /// \returns a datetime string in YearMonthDayHourMinuteSecond format
-    std::string get_datetime_string();
-
-    /// \returns file size of the given path or 0 if the file does not exist
-    std::uintmax_t file_size(const std::filesystem::path& path);
 
     /// \brief Rotates the log at the given file \p file_basename and remove oldest file if there are more log files
     /// than the maximum
@@ -158,7 +146,7 @@ public:
     std::string get_message_log_path();
 
     /// \returns If session logging is active
-    bool session_logging_active();
+    bool session_logging_active() const;
 };
 
 } // namespace ocpp

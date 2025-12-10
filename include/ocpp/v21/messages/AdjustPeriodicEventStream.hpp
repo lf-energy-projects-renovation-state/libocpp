@@ -18,7 +18,7 @@ namespace v21 {
 
 /// \brief Contains a OCPP AdjustPeriodicEventStream message
 struct AdjustPeriodicEventStreamRequest : public ocpp::Message {
-    int32_t id;
+    std::int32_t id;
     PeriodicEventStreamParams params;
     std::optional<CustomData> customData;
 
@@ -34,7 +34,8 @@ void to_json(json& j, const AdjustPeriodicEventStreamRequest& k);
 void from_json(const json& j, AdjustPeriodicEventStreamRequest& k);
 
 /// \brief Writes the string representation of the given AdjustPeriodicEventStreamRequest \p k to the given output
-/// stream \p os \returns an output stream with the AdjustPeriodicEventStreamRequest written to
+/// stream \p os
+/// \returns an output stream with the AdjustPeriodicEventStreamRequest written to
 std::ostream& operator<<(std::ostream& os, const AdjustPeriodicEventStreamRequest& k);
 
 /// \brief Contains a OCPP AdjustPeriodicEventStreamResponse message
@@ -55,7 +56,8 @@ void to_json(json& j, const AdjustPeriodicEventStreamResponse& k);
 void from_json(const json& j, AdjustPeriodicEventStreamResponse& k);
 
 /// \brief Writes the string representation of the given AdjustPeriodicEventStreamResponse \p k to the given output
-/// stream \p os \returns an output stream with the AdjustPeriodicEventStreamResponse written to
+/// stream \p os
+/// \returns an output stream with the AdjustPeriodicEventStreamResponse written to
 std::ostream& operator<<(std::ostream& os, const AdjustPeriodicEventStreamResponse& k);
 
 } // namespace v21

@@ -31,7 +31,12 @@ WebsocketBase::WebsocketBase() :
 }
 
 WebsocketBase::~WebsocketBase() {
-    this->cancel_reconnect_timer();
+    try {
+        this->cancel_reconnect_timer();
+    } catch (...) {
+        EVLOG_error << "Exception during dtor call of reconnect timer cancellation";
+        return;
+    }
 }
 
 void WebsocketBase::set_connection_options_base(const WebsocketConnectionOptions& connection_options) {
@@ -83,7 +88,7 @@ void WebsocketBase::disconnect(const WebsocketCloseReason code) {
     }
 
     {
-        std::lock_guard<std::mutex> lk(this->reconnect_mutex);
+        const std::lock_guard<std::mutex> lk(this->reconnect_mutex);
         if (code == WebsocketCloseReason::Normal) {
             this->shutting_down = true;
         }
@@ -110,7 +115,7 @@ std::optional<std::string> WebsocketBase::getAuthorizationHeader() {
     const auto authorization_key = this->connection_options.authorization_key;
     if (authorization_key.has_value()) {
         EVLOG_debug << "AuthorizationKey present, encoding authentication header";
-        std::string plain_auth_header =
+        const std::string plain_auth_header =
             this->connection_options.csms_uri.get_chargepoint_id() + ":" + authorization_key.value();
 
         // TODO (ioan): replace with libevse-security usage
@@ -142,27 +147,27 @@ long WebsocketBase::get_reconnect_interval() {
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> distr(0, this->connection_options.retry_backoff_random_range_s);
 
-    int random_number = distr(gen);
+    const int random_number = distr(gen);
 
     if (this->connection_attempts == 1) {
         this->reconnect_backoff_ms = (this->connection_options.retry_backoff_wait_minimum_s + random_number) * 1000;
         return this->reconnect_backoff_ms;
     }
 
-    this->reconnect_backoff_ms = this->reconnect_backoff_ms * 2 + (random_number * 1000);
+    this->reconnect_backoff_ms = (this->reconnect_backoff_ms * 2) + (random_number * 1000);
     return this->reconnect_backoff_ms;
 }
 
 void WebsocketBase::cancel_reconnect_timer() {
-    std::lock_guard<std::mutex> lk(this->reconnect_mutex);
+    const std::lock_guard<std::mutex> lk(this->reconnect_mutex);
     if (this->reconnect_timer) {
         this->reconnect_timer.get()->cancel();
     }
     this->reconnect_timer = nullptr;
 }
 
-void WebsocketBase::set_websocket_ping_interval(int32_t ping_interval_s, int32_t pong_timeout_s) {
-    static constexpr int32_t PING_TIMER_INTERVAL = 1;
+void WebsocketBase::set_websocket_ping_interval(std::int32_t ping_interval_s, std::int32_t pong_timeout_s) {
+    static constexpr std::int32_t PING_TIMER_INTERVAL = 1;
 
     if (this->ping_timer) {
         this->ping_timer->stop();

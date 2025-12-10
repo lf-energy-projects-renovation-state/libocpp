@@ -15,7 +15,7 @@ using namespace common;
 namespace v16 {
 
 DatabaseHandler::DatabaseHandler(std::unique_ptr<ConnectionInterface> database,
-                                 const fs::path& sql_migration_files_path, int32_t number_of_connectors) :
+                                 const fs::path& sql_migration_files_path, std::int32_t number_of_connectors) :
     DatabaseHandlerCommon(std::move(database), sql_migration_files_path, MIGRATION_FILE_VERSION_V16),
     number_of_connectors(number_of_connectors) {
 }
@@ -30,8 +30,9 @@ void DatabaseHandler::init_sql() {
 }
 
 void DatabaseHandler::init_connector_table() {
-    for (int32_t connector = 0; connector <= this->number_of_connectors; connector++) {
-        std::string sql = "INSERT OR IGNORE INTO CONNECTORS (ID, AVAILABILITY) VALUES (@connector, @availability_type)";
+    for (std::int32_t connector = 0; connector <= this->number_of_connectors; connector++) {
+        const std::string sql =
+            "INSERT OR IGNORE INTO CONNECTORS (ID, AVAILABILITY) VALUES (@connector, @availability_type)";
         auto stmt = this->database->new_statement(sql);
 
         stmt->bind_int("@connector", connector);
@@ -45,12 +46,12 @@ void DatabaseHandler::init_connector_table() {
 }
 
 // transactions
-void DatabaseHandler::insert_transaction(const std::string& session_id, const int32_t transaction_id,
-                                         const int32_t connector, const std::string& id_tag_start,
-                                         const std::string& time_start, const int32_t meter_start, const bool csms_ack,
-                                         const std::optional<int32_t> reservation_id,
+void DatabaseHandler::insert_transaction(const std::string& session_id, const std::int32_t transaction_id,
+                                         const std::int32_t connector, const std::string& id_tag_start,
+                                         const std::string& time_start, const std::int32_t meter_start,
+                                         const bool csms_ack, const std::optional<std::int32_t> reservation_id,
                                          const std::string& start_transaction_message_id) {
-    std::string sql =
+    const std::string sql =
         "INSERT INTO TRANSACTIONS (ID, TRANSACTION_ID, CONNECTOR, ID_TAG_START, TIME_START, METER_START, "
         "CSMS_ACK, METER_LAST, METER_LAST_TIME, LAST_UPDATE, RESERVATION_ID, START_TRANSACTION_MESSAGE_ID) VALUES "
         "(@session_id, @transaction_id, @connector, @id_tag_start, @time_start, @meter_start, @csms_ack, "
@@ -80,11 +81,11 @@ void DatabaseHandler::insert_transaction(const std::string& session_id, const in
     }
 }
 
-void DatabaseHandler::update_transaction(const std::string& session_id, int32_t transaction_id,
+void DatabaseHandler::update_transaction(const std::string& session_id, std::int32_t transaction_id,
                                          std::optional<CiString<20>> parent_id_tag) {
 
-    std::string sql = "UPDATE TRANSACTIONS SET TRANSACTION_ID=@transaction_id, PARENT_ID_TAG=@parent_id_tag, "
-                      "LAST_UPDATE=@last_update WHERE ID==@session_id";
+    const std::string sql = "UPDATE TRANSACTIONS SET TRANSACTION_ID=@transaction_id, PARENT_ID_TAG=@parent_id_tag, "
+                            "LAST_UPDATE=@last_update WHERE ID==@session_id";
     auto stmt = this->database->new_statement(sql);
 
     // bindings
@@ -100,12 +101,13 @@ void DatabaseHandler::update_transaction(const std::string& session_id, int32_t 
     }
 }
 
-void DatabaseHandler::update_transaction(const std::string& session_id, int32_t meter_stop, const std::string& time_end,
-                                         std::optional<CiString<20>> id_tag_end, std::optional<v16::Reason> stop_reason,
+void DatabaseHandler::update_transaction(const std::string& session_id, std::int32_t meter_stop,
+                                         const std::string& time_end, std::optional<CiString<20>> id_tag_end,
+                                         std::optional<v16::Reason> stop_reason,
                                          const std::string& stop_transaction_message_id) {
-    std::string sql = "UPDATE TRANSACTIONS SET METER_STOP=@meter_stop, TIME_END=@time_end, "
-                      "ID_TAG_END=@id_tag_end, STOP_REASON=@stop_reason, LAST_UPDATE=@last_update, "
-                      "STOP_TRANSACTION_MESSAGE_ID=@stop_transaction_message_id WHERE ID==@session_id";
+    const std::string sql = "UPDATE TRANSACTIONS SET METER_STOP=@meter_stop, TIME_END=@time_end, "
+                            "ID_TAG_END=@id_tag_end, STOP_REASON=@stop_reason, LAST_UPDATE=@last_update, "
+                            "STOP_TRANSACTION_MESSAGE_ID=@stop_transaction_message_id WHERE ID==@session_id";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_int("@meter_stop", meter_stop);
@@ -126,8 +128,8 @@ void DatabaseHandler::update_transaction(const std::string& session_id, int32_t 
     }
 }
 
-void DatabaseHandler::update_transaction_csms_ack(const int32_t transaction_id) {
-    std::string sql =
+void DatabaseHandler::update_transaction_csms_ack(const std::int32_t transaction_id) {
+    const std::string sql =
         "UPDATE TRANSACTIONS SET CSMS_ACK=1, LAST_UPDATE=@last_update WHERE TRANSACTION_ID==@transaction_id";
     auto stmt = this->database->new_statement(sql);
 
@@ -139,10 +141,10 @@ void DatabaseHandler::update_transaction_csms_ack(const int32_t transaction_id) 
     }
 }
 
-void DatabaseHandler::update_start_transaction_message_id(const std::string& session_id,
+void DatabaseHandler::update_start_transaction_message_id(const std::string& /*session_id*/,
                                                           const std::string& start_transaction_message_id) {
-    std::string sql = "UPDATE TRANSACTIONS SET START_TRANSACTION_MESSAGE_ID=@start_transaction_message_id, "
-                      "LAST_UPDATE=@last_update WHERE ID==@session_id";
+    const std::string sql = "UPDATE TRANSACTIONS SET START_TRANSACTION_MESSAGE_ID=@start_transaction_message_id, "
+                            "LAST_UPDATE=@last_update WHERE ID==@session_id";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_text("@last_update", ocpp::DateTime().to_rfc3339(), SQLiteString::Transient);
@@ -153,10 +155,10 @@ void DatabaseHandler::update_start_transaction_message_id(const std::string& ses
     }
 }
 
-void DatabaseHandler::update_transaction_meter_value(const std::string& session_id, const int32_t value,
+void DatabaseHandler::update_transaction_meter_value(const std::string& session_id, const std::int32_t value,
                                                      const std::string& last_meter_time) {
-    std::string sql = "UPDATE TRANSACTIONS SET METER_LAST=@meter_last, METER_LAST_TIME=@meter_last_time, "
-                      "LAST_UPDATE=@last_update WHERE ID==@session_id";
+    const std::string sql = "UPDATE TRANSACTIONS SET METER_LAST=@meter_last, METER_LAST_TIME=@meter_last_time, "
+                            "LAST_UPDATE=@last_update WHERE ID==@session_id";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_int("@meter_last", value);
@@ -180,7 +182,7 @@ std::vector<TransactionEntry> DatabaseHandler::get_transactions(bool filter_inco
 
     auto stmt = this->database->new_statement(sql);
 
-    int status;
+    int status = SQLITE_ERROR;
     while ((status = stmt->step()) == SQLITE_ROW) {
         TransactionEntry transaction_entry;
         transaction_entry.session_id = stmt->column_text(0);
@@ -232,8 +234,9 @@ void DatabaseHandler::insert_or_update_authorization_cache_entry(const CiString<
 
     // TODO(piet): Only call this when authorization cache is enabled!
 
-    std::string sql = "INSERT OR REPLACE INTO AUTH_CACHE (ID_TAG, AUTH_STATUS, EXPIRY_DATE, PARENT_ID_TAG) VALUES "
-                      "(@id_tag, @auth_status, @expiry_date, @parent_id_tag)";
+    const std::string sql =
+        "INSERT OR REPLACE INTO AUTH_CACHE (ID_TAG, AUTH_STATUS, EXPIRY_DATE, PARENT_ID_TAG) VALUES "
+        "(@id_tag, @auth_status, @expiry_date, @parent_id_tag)";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_text("@id_tag", id_tag.get(), SQLiteString::Transient);
@@ -253,12 +256,13 @@ void DatabaseHandler::insert_or_update_authorization_cache_entry(const CiString<
 
 std::optional<v16::IdTagInfo> DatabaseHandler::get_authorization_cache_entry(const CiString<20>& id_tag) {
 
-    std::string sql = "SELECT ID_TAG, AUTH_STATUS, EXPIRY_DATE, PARENT_ID_TAG FROM AUTH_CACHE WHERE ID_TAG = @id_tag";
+    const std::string sql =
+        "SELECT ID_TAG, AUTH_STATUS, EXPIRY_DATE, PARENT_ID_TAG FROM AUTH_CACHE WHERE ID_TAG = @id_tag";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_text("@id_tag", id_tag.get(), SQLiteString::Transient);
 
-    int status = stmt->step();
+    const int status = stmt->step();
 
     // entry was not found
     if (status == SQLITE_DONE) {
@@ -302,9 +306,9 @@ void DatabaseHandler::clear_authorization_cache() {
     }
 }
 
-void DatabaseHandler::insert_or_update_connector_availability(int32_t connector,
+void DatabaseHandler::insert_or_update_connector_availability(std::int32_t connector,
                                                               const v16::AvailabilityType& availability_type) {
-    std::string sql = "INSERT OR REPLACE INTO CONNECTORS (ID, AVAILABILITY) VALUES (@id, @availability)";
+    const std::string sql = "INSERT OR REPLACE INTO CONNECTORS (ID, AVAILABILITY) VALUES (@id, @availability)";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_int("@id", connector);
@@ -318,20 +322,20 @@ void DatabaseHandler::insert_or_update_connector_availability(int32_t connector,
 }
 
 // connector availability
-void DatabaseHandler::insert_or_update_connector_availability(const std::vector<int32_t>& connectors,
+void DatabaseHandler::insert_or_update_connector_availability(const std::vector<std::int32_t>& connectors,
                                                               const v16::AvailabilityType& availability_type) {
     for (const auto connector : connectors) {
         this->insert_or_update_connector_availability(connector, availability_type);
     }
 }
 
-v16::AvailabilityType DatabaseHandler::get_connector_availability(int32_t connector) {
-    std::string sql = "SELECT AVAILABILITY FROM CONNECTORS WHERE ID = @connector";
+v16::AvailabilityType DatabaseHandler::get_connector_availability(std::int32_t connector) {
+    const std::string sql = "SELECT AVAILABILITY FROM CONNECTORS WHERE ID = @connector";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_int("@connector", connector);
 
-    int status = stmt->step();
+    const int status = stmt->step();
 
     if (status == SQLITE_DONE) {
         throw RequiredEntryNotFoundException("Connector not found");
@@ -345,12 +349,12 @@ v16::AvailabilityType DatabaseHandler::get_connector_availability(int32_t connec
     return v16::conversions::string_to_availability_type(stmt->column_text(0));
 }
 
-std::map<int32_t, v16::AvailabilityType> DatabaseHandler::get_connector_availability() {
-    std::map<int32_t, v16::AvailabilityType> availability_map;
+std::map<std::int32_t, v16::AvailabilityType> DatabaseHandler::get_connector_availability() {
+    std::map<std::int32_t, v16::AvailabilityType> availability_map;
     const std::string sql = "SELECT ID, AVAILABILITY FROM CONNECTORS";
     auto stmt = this->database->new_statement(sql);
 
-    int status;
+    int status = SQLITE_ERROR;
     while ((status = stmt->step()) == SQLITE_ROW) {
         auto connector = stmt->column_int(0);
         availability_map[connector] = v16::conversions::string_to_availability_type(stmt->column_text(1));
@@ -363,8 +367,8 @@ std::map<int32_t, v16::AvailabilityType> DatabaseHandler::get_connector_availabi
     return availability_map;
 }
 
-void DatabaseHandler::insert_or_ignore_local_list_version(int32_t version) {
-    std::string sql = "INSERT OR IGNORE INTO AUTH_LIST_VERSION (ID, VERSION) VALUES (0, @version)";
+void DatabaseHandler::insert_or_ignore_local_list_version(std::int32_t version) {
+    const std::string sql = "INSERT OR IGNORE INTO AUTH_LIST_VERSION (ID, VERSION) VALUES (0, @version)";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_int("@version", version);
@@ -374,8 +378,8 @@ void DatabaseHandler::insert_or_ignore_local_list_version(int32_t version) {
 }
 
 // local auth list management
-void DatabaseHandler::insert_or_update_local_list_version(int32_t version) {
-    std::string sql = "INSERT OR REPLACE INTO AUTH_LIST_VERSION (ID, VERSION) VALUES (0, @version)";
+void DatabaseHandler::insert_or_update_local_list_version(std::int32_t version) {
+    const std::string sql = "INSERT OR REPLACE INTO AUTH_LIST_VERSION (ID, VERSION) VALUES (0, @version)";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_int("@version", version);
@@ -384,11 +388,11 @@ void DatabaseHandler::insert_or_update_local_list_version(int32_t version) {
     }
 }
 
-int32_t DatabaseHandler::get_local_list_version() {
-    std::string sql = "SELECT VERSION FROM AUTH_LIST_VERSION WHERE ID = 0";
+std::int32_t DatabaseHandler::get_local_list_version() {
+    const std::string sql = "SELECT VERSION FROM AUTH_LIST_VERSION WHERE ID = 0";
     auto stmt = this->database->new_statement(sql);
 
-    int status = stmt->step();
+    const int status = stmt->step();
     if (status == SQLITE_DONE) {
         throw RequiredEntryNotFoundException("Local list version not found");
     }
@@ -403,8 +407,8 @@ int32_t DatabaseHandler::get_local_list_version() {
 void DatabaseHandler::insert_or_update_local_authorization_list_entry(const CiString<20>& id_tag,
                                                                       const v16::IdTagInfo& id_tag_info) {
     // add or replace
-    std::string sql = "INSERT OR REPLACE INTO AUTH_LIST (ID_TAG, AUTH_STATUS, EXPIRY_DATE, PARENT_ID_TAG) VALUES "
-                      "(@id_tag, @auth_status, @expiry_date, @parent_id_tag)";
+    const std::string sql = "INSERT OR REPLACE INTO AUTH_LIST (ID_TAG, AUTH_STATUS, EXPIRY_DATE, PARENT_ID_TAG) VALUES "
+                            "(@id_tag, @auth_status, @expiry_date, @parent_id_tag)";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_text("@id_tag", id_tag.get(), SQLiteString::Transient);
@@ -432,7 +436,7 @@ void DatabaseHandler::insert_or_update_local_authorization_list(
                 this->insert_or_update_local_authorization_list_entry(authorization_data.idTag,
                                                                       authorization_data.idTagInfo.value());
             } else {
-                this->delete_local_authorization_list_entry(authorization_data.idTag.get().c_str());
+                this->delete_local_authorization_list_entry(authorization_data.idTag.get());
             }
         } catch (const QueryExecutionException& e) {
             // catch but continue with remaining entries
@@ -446,7 +450,7 @@ void DatabaseHandler::insert_or_update_local_authorization_list(
 }
 
 void DatabaseHandler::delete_local_authorization_list_entry(const std::string& id_tag) {
-    std::string sql = "DELETE FROM AUTH_LIST WHERE ID_TAG = @id_tag;";
+    const std::string sql = "DELETE FROM AUTH_LIST WHERE ID_TAG = @id_tag;";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_text("@id_tag", id_tag);
@@ -456,12 +460,13 @@ void DatabaseHandler::delete_local_authorization_list_entry(const std::string& i
 }
 
 std::optional<v16::IdTagInfo> DatabaseHandler::get_local_authorization_list_entry(const CiString<20>& id_tag) {
-    std::string sql = "SELECT ID_TAG, AUTH_STATUS, EXPIRY_DATE, PARENT_ID_TAG FROM AUTH_LIST WHERE ID_TAG = @id_tag";
+    const std::string sql =
+        "SELECT ID_TAG, AUTH_STATUS, EXPIRY_DATE, PARENT_ID_TAG FROM AUTH_LIST WHERE ID_TAG = @id_tag";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_text("@id_tag", id_tag.get(), SQLiteString::Transient);
 
-    int status = stmt->step();
+    const int status = stmt->step();
 
     // entry was not found
     if (status == SQLITE_DONE) {
@@ -506,8 +511,8 @@ void DatabaseHandler::clear_local_authorization_list() {
     }
 }
 
-int32_t DatabaseHandler::get_local_authorization_list_number_of_entries() {
-    std::string sql = "SELECT COUNT(*) FROM AUTH_LIST;";
+std::int32_t DatabaseHandler::get_local_authorization_list_number_of_entries() {
+    const std::string sql = "SELECT COUNT(*) FROM AUTH_LIST;";
     auto stmt = this->database->new_statement(sql);
 
     if (stmt->step() != SQLITE_ROW) {
@@ -546,7 +551,7 @@ void DatabaseHandler::insert_or_update_charging_profile(const int connector_id, 
           "(@id, @connector_id, @profile)";
     stmt = this->database->new_statement(sql);
 
-    json json_profile(profile);
+    const json json_profile(profile);
 
     stmt->bind_int("@id", profile.chargingProfileId);
     stmt->bind_int("@connector_id", connector_id);
@@ -558,7 +563,7 @@ void DatabaseHandler::insert_or_update_charging_profile(const int connector_id, 
 }
 
 void DatabaseHandler::delete_charging_profile(const int profile_id) {
-    std::string sql = "DELETE FROM CHARGING_PROFILES WHERE ID = @id;";
+    const std::string sql = "DELETE FROM CHARGING_PROFILES WHERE ID = @id;";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_int("@id", profile_id);
@@ -577,10 +582,10 @@ void DatabaseHandler::delete_charging_profiles() {
 std::vector<v16::ChargingProfile> DatabaseHandler::get_charging_profiles() {
 
     std::vector<v16::ChargingProfile> profiles;
-    std::string sql = "SELECT * FROM CHARGING_PROFILES";
+    const std::string sql = "SELECT * FROM CHARGING_PROFILES";
     auto stmt = this->database->new_statement(sql);
 
-    int status;
+    int status = SQLITE_ERROR;
     while ((status = stmt->step()) == SQLITE_ROW) {
         profiles.emplace_back(json::parse(stmt->column_text(2)));
     }
@@ -593,12 +598,12 @@ std::vector<v16::ChargingProfile> DatabaseHandler::get_charging_profiles() {
 }
 
 int DatabaseHandler::get_connector_id(const int profile_id) {
-    std::string sql = "SELECT CONNECTOR_ID FROM CHARGING_PROFILES WHERE ID = @profile_id";
+    const std::string sql = "SELECT CONNECTOR_ID FROM CHARGING_PROFILES WHERE ID = @profile_id";
     auto stmt = this->database->new_statement(sql);
 
     stmt->bind_int("@profile_id", profile_id);
 
-    int status = stmt->step();
+    const int status = stmt->step();
 
     if (status == SQLITE_DONE) {
         throw RequiredEntryNotFoundException("Connector id not found based on charging profile id");

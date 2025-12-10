@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2020 - 2024 Pionix GmbH and Contributors to EVerest
+// Copyright 2020 - 2025 Pionix GmbH and Contributors to EVerest
 // This code is generated using the generator in 'src/code_generator/common`, please do not edit manually
 
 #ifndef OCPP_V16_GETDIAGNOSTICS_HPP
@@ -17,8 +17,8 @@ namespace v16 {
 /// \brief Contains a OCPP GetDiagnostics message
 struct GetDiagnosticsRequest : public ocpp::Message {
     std::string location;
-    std::optional<int32_t> retries;
-    std::optional<int32_t> retryInterval;
+    std::optional<std::int32_t> retries;
+    std::optional<std::int32_t> retryInterval;
     std::optional<ocpp::DateTime> startTime;
     std::optional<ocpp::DateTime> stopTime;
 

@@ -17,8 +17,8 @@ namespace v2 {
 
 /// \brief Contains a OCPP GetCompositeSchedule message
 struct GetCompositeScheduleRequest : public ocpp::Message {
-    int32_t duration;
-    int32_t evseId;
+    std::int32_t duration;
+    std::int32_t evseId;
     std::optional<ChargingRateUnitEnum> chargingRateUnit;
     std::optional<CustomData> customData;
 
@@ -34,7 +34,8 @@ void to_json(json& j, const GetCompositeScheduleRequest& k);
 void from_json(const json& j, GetCompositeScheduleRequest& k);
 
 /// \brief Writes the string representation of the given GetCompositeScheduleRequest \p k to the given output stream \p
-/// os \returns an output stream with the GetCompositeScheduleRequest written to
+/// os
+/// \returns an output stream with the GetCompositeScheduleRequest written to
 std::ostream& operator<<(std::ostream& os, const GetCompositeScheduleRequest& k);
 
 /// \brief Contains a OCPP GetCompositeScheduleResponse message
@@ -56,7 +57,8 @@ void to_json(json& j, const GetCompositeScheduleResponse& k);
 void from_json(const json& j, GetCompositeScheduleResponse& k);
 
 /// \brief Writes the string representation of the given GetCompositeScheduleResponse \p k to the given output stream \p
-/// os \returns an output stream with the GetCompositeScheduleResponse written to
+/// os
+/// \returns an output stream with the GetCompositeScheduleResponse written to
 std::ostream& operator<<(std::ostream& os, const GetCompositeScheduleResponse& k);
 
 } // namespace v2

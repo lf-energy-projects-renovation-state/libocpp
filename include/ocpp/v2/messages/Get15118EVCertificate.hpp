@@ -21,7 +21,7 @@ struct Get15118EVCertificateRequest : public ocpp::Message {
     CiString<50> iso15118SchemaVersion;
     CertificateActionEnum action;
     CiString<11000> exiRequest;
-    std::optional<int32_t> maximumContractCertificateChains;
+    std::optional<std::int32_t> maximumContractCertificateChains;
     std::optional<std::vector<CiString<255>>> prioritizedEMAIDs;
     std::optional<CustomData> customData;
 
@@ -37,7 +37,8 @@ void to_json(json& j, const Get15118EVCertificateRequest& k);
 void from_json(const json& j, Get15118EVCertificateRequest& k);
 
 /// \brief Writes the string representation of the given Get15118EVCertificateRequest \p k to the given output stream \p
-/// os \returns an output stream with the Get15118EVCertificateRequest written to
+/// os
+/// \returns an output stream with the Get15118EVCertificateRequest written to
 std::ostream& operator<<(std::ostream& os, const Get15118EVCertificateRequest& k);
 
 /// \brief Contains a OCPP Get15118EVCertificateResponse message
@@ -45,7 +46,7 @@ struct Get15118EVCertificateResponse : public ocpp::Message {
     Iso15118EVCertificateStatusEnum status;
     CiString<ISO15118_GET_EV_CERTIFICATE_EXI_RESPONSE_SIZE> exiResponse;
     std::optional<StatusInfo> statusInfo;
-    std::optional<int32_t> remainingContracts;
+    std::optional<std::int32_t> remainingContracts;
     std::optional<CustomData> customData;
 
     /// \brief Provides the type of this Get15118EVCertificateResponse message as a human readable string
@@ -60,7 +61,8 @@ void to_json(json& j, const Get15118EVCertificateResponse& k);
 void from_json(const json& j, Get15118EVCertificateResponse& k);
 
 /// \brief Writes the string representation of the given Get15118EVCertificateResponse \p k to the given output stream
-/// \p os \returns an output stream with the Get15118EVCertificateResponse written to
+/// \p os
+/// \returns an output stream with the Get15118EVCertificateResponse written to
 std::ostream& operator<<(std::ostream& os, const Get15118EVCertificateResponse& k);
 
 } // namespace v2

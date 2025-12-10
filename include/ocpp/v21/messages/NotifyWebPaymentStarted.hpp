@@ -17,8 +17,8 @@ namespace v21 {
 
 /// \brief Contains a OCPP NotifyWebPaymentStarted message
 struct NotifyWebPaymentStartedRequest : public ocpp::Message {
-    int32_t evseId;
-    int32_t timeout;
+    std::int32_t evseId;
+    std::int32_t timeout;
     std::optional<CustomData> customData;
 
     /// \brief Provides the type of this NotifyWebPaymentStarted message as a human readable string
@@ -33,7 +33,8 @@ void to_json(json& j, const NotifyWebPaymentStartedRequest& k);
 void from_json(const json& j, NotifyWebPaymentStartedRequest& k);
 
 /// \brief Writes the string representation of the given NotifyWebPaymentStartedRequest \p k to the given output stream
-/// \p os \returns an output stream with the NotifyWebPaymentStartedRequest written to
+/// \p os
+/// \returns an output stream with the NotifyWebPaymentStartedRequest written to
 std::ostream& operator<<(std::ostream& os, const NotifyWebPaymentStartedRequest& k);
 
 /// \brief Contains a OCPP NotifyWebPaymentStartedResponse message
@@ -52,7 +53,8 @@ void to_json(json& j, const NotifyWebPaymentStartedResponse& k);
 void from_json(const json& j, NotifyWebPaymentStartedResponse& k);
 
 /// \brief Writes the string representation of the given NotifyWebPaymentStartedResponse \p k to the given output stream
-/// \p os \returns an output stream with the NotifyWebPaymentStartedResponse written to
+/// \p os
+/// \returns an output stream with the NotifyWebPaymentStartedResponse written to
 std::ostream& operator<<(std::ostream& os, const NotifyWebPaymentStartedResponse& k);
 
 } // namespace v21

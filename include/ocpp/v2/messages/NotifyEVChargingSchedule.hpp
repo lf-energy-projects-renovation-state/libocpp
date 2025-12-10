@@ -19,8 +19,8 @@ namespace v2 {
 struct NotifyEVChargingScheduleRequest : public ocpp::Message {
     ocpp::DateTime timeBase;
     ChargingSchedule chargingSchedule;
-    int32_t evseId;
-    std::optional<int32_t> selectedChargingScheduleId;
+    std::int32_t evseId;
+    std::optional<std::int32_t> selectedChargingScheduleId;
     std::optional<bool> powerToleranceAcceptance;
     std::optional<CustomData> customData;
 
@@ -36,7 +36,8 @@ void to_json(json& j, const NotifyEVChargingScheduleRequest& k);
 void from_json(const json& j, NotifyEVChargingScheduleRequest& k);
 
 /// \brief Writes the string representation of the given NotifyEVChargingScheduleRequest \p k to the given output stream
-/// \p os \returns an output stream with the NotifyEVChargingScheduleRequest written to
+/// \p os
+/// \returns an output stream with the NotifyEVChargingScheduleRequest written to
 std::ostream& operator<<(std::ostream& os, const NotifyEVChargingScheduleRequest& k);
 
 /// \brief Contains a OCPP NotifyEVChargingScheduleResponse message
@@ -57,7 +58,8 @@ void to_json(json& j, const NotifyEVChargingScheduleResponse& k);
 void from_json(const json& j, NotifyEVChargingScheduleResponse& k);
 
 /// \brief Writes the string representation of the given NotifyEVChargingScheduleResponse \p k to the given output
-/// stream \p os \returns an output stream with the NotifyEVChargingScheduleResponse written to
+/// stream \p os
+/// \returns an output stream with the NotifyEVChargingScheduleResponse written to
 std::ostream& operator<<(std::ostream& os, const NotifyEVChargingScheduleResponse& k);
 
 } // namespace v2

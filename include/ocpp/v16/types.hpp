@@ -117,7 +117,7 @@ MessageType string_to_messagetype(const std::string& s);
 std::ostream& operator<<(std::ostream& os, const MessageType& message_type);
 
 /// \brief Contains the supported OCPP 1.6 feature profiles
-enum SupportedFeatureProfiles {
+enum class SupportedFeatureProfiles {
     Internal,
     Core,
     CostAndPrice,
@@ -145,7 +145,7 @@ SupportedFeatureProfiles string_to_supported_feature_profiles(const std::string&
 std::ostream& operator<<(std::ostream& os, const SupportedFeatureProfiles& supported_feature_profiles);
 
 /// \brief Contains the different connection states of the charge point
-enum ChargePointConnectionState {
+enum class ChargePointConnectionState {
     Disconnected, // state when disconnected
     Connected,    // state when ws is connected
     Booted,       // state when ws is connected and BootNotifcation had been Accepted
@@ -189,7 +189,7 @@ struct AvailabilityChange {
 };
 
 /// \brief BootReasonEnum contains the different boot reasons of the charge point (copied from OCPP2.0.1 definition)
-enum BootReasonEnum {
+enum class BootReasonEnum {
     ApplicationReset,
     FirmwareUpdate,
     LocalReset,
@@ -203,10 +203,10 @@ enum BootReasonEnum {
 
 /// \brief Enhances ChargingSchedulePeriod with stackLevel
 struct EnhancedChargingSchedulePeriod {
-    int32_t startPeriod;
+    std::int32_t startPeriod;
     float limit;
-    std::optional<int32_t> numberPhases;
-    int32_t stackLevel;
+    std::optional<std::int32_t> numberPhases;
+    std::int32_t stackLevel;
     bool periodTransformed = false; // indicates that a period was transformed from chargingRateUnit
 };
 
@@ -221,7 +221,7 @@ void from_json(const json& j, EnhancedChargingSchedulePeriod& k);
 struct EnhancedChargingSchedule {
     ChargingRateUnit chargingRateUnit;
     std::vector<EnhancedChargingSchedulePeriod> chargingSchedulePeriod;
-    std::optional<int32_t> duration;
+    std::optional<std::int32_t> duration;
     std::optional<ocpp::DateTime> startSchedule;
     std::optional<float> minChargingRate;
 };

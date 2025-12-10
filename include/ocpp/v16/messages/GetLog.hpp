@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2020 - 2024 Pionix GmbH and Contributors to EVerest
+// Copyright 2020 - 2025 Pionix GmbH and Contributors to EVerest
 // This code is generated using the generator in 'src/code_generator/common`, please do not edit manually
 
 #ifndef OCPP_V16_GETLOG_HPP
@@ -19,9 +19,9 @@ namespace v16 {
 struct GetLogRequest : public ocpp::Message {
     LogParametersType log;
     LogEnumType logType;
-    int32_t requestId;
-    std::optional<int32_t> retries;
-    std::optional<int32_t> retryInterval;
+    std::int32_t requestId;
+    std::optional<std::int32_t> retries;
+    std::optional<std::int32_t> retryInterval;
 
     /// \brief Provides the type of this GetLog message as a human readable string
     /// \returns the message type as a human readable string

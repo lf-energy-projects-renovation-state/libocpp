@@ -19,7 +19,7 @@ namespace v2 {
 struct NotifyChargingLimitRequest : public ocpp::Message {
     ChargingLimit chargingLimit;
     std::optional<std::vector<ChargingSchedule>> chargingSchedule;
-    std::optional<int32_t> evseId;
+    std::optional<std::int32_t> evseId;
     std::optional<CustomData> customData;
 
     /// \brief Provides the type of this NotifyChargingLimit message as a human readable string
@@ -34,7 +34,8 @@ void to_json(json& j, const NotifyChargingLimitRequest& k);
 void from_json(const json& j, NotifyChargingLimitRequest& k);
 
 /// \brief Writes the string representation of the given NotifyChargingLimitRequest \p k to the given output stream \p
-/// os \returns an output stream with the NotifyChargingLimitRequest written to
+/// os
+/// \returns an output stream with the NotifyChargingLimitRequest written to
 std::ostream& operator<<(std::ostream& os, const NotifyChargingLimitRequest& k);
 
 /// \brief Contains a OCPP NotifyChargingLimitResponse message
@@ -53,7 +54,8 @@ void to_json(json& j, const NotifyChargingLimitResponse& k);
 void from_json(const json& j, NotifyChargingLimitResponse& k);
 
 /// \brief Writes the string representation of the given NotifyChargingLimitResponse \p k to the given output stream \p
-/// os \returns an output stream with the NotifyChargingLimitResponse written to
+/// os
+/// \returns an output stream with the NotifyChargingLimitResponse written to
 std::ostream& operator<<(std::ostream& os, const NotifyChargingLimitResponse& k);
 
 } // namespace v2

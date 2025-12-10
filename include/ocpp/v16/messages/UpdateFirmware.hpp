@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2020 - 2024 Pionix GmbH and Contributors to EVerest
+// Copyright 2020 - 2025 Pionix GmbH and Contributors to EVerest
 // This code is generated using the generator in 'src/code_generator/common`, please do not edit manually
 
 #ifndef OCPP_V16_UPDATEFIRMWARE_HPP
@@ -17,8 +17,8 @@ namespace v16 {
 struct UpdateFirmwareRequest : public ocpp::Message {
     std::string location;
     ocpp::DateTime retrieveDate;
-    std::optional<int32_t> retries;
-    std::optional<int32_t> retryInterval;
+    std::optional<std::int32_t> retries;
+    std::optional<std::int32_t> retryInterval;
 
     /// \brief Provides the type of this UpdateFirmware message as a human readable string
     /// \returns the message type as a human readable string

@@ -5,7 +5,7 @@
 namespace ocpp::v2 {
 
 bool Callbacks::all_callbacks_valid(std::shared_ptr<DeviceModel> device_model,
-                                    const std::map<int32_t, int32_t>& evse_connector_structure) const {
+                                    const std::map<std::int32_t, std::int32_t>& evse_connector_structure) const {
     bool valid =
         this->is_reset_allowed_callback != nullptr and this->reset_callback != nullptr and
         this->stop_transaction_callback != nullptr and this->pause_charging_callback != nullptr and
@@ -88,7 +88,7 @@ bool Callbacks::all_callbacks_valid(std::shared_ptr<DeviceModel> device_model,
             }
         }
 
-        bool v2x_available = std::any_of(
+        const bool v2x_available = std::any_of(
             evse_connector_structure.begin(), evse_connector_structure.end(), [device_model](const auto& entry) {
                 const auto& [evse, connectors] = entry;
                 return device_model

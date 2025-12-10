@@ -36,13 +36,13 @@ std::string connector_event_to_string(ConnectorEvent e) {
 
 } // namespace conversions
 
-Connector::Connector(const int32_t evse_id, const int32_t connector_id,
+Connector::Connector(const std::int32_t evse_id, const std::int32_t connector_id,
                      std::shared_ptr<ComponentStateManagerInterface> component_state_manager) :
     evse_id(evse_id), connector_id(connector_id), component_state_manager(component_state_manager) {
 }
 
 void Connector::submit_event(ConnectorEvent event) {
-    std::lock_guard lk(this->status_mutex);
+    const std::lock_guard lk(this->status_mutex);
     switch (event) {
     case ConnectorEvent::PlugIn:
         this->component_state_manager->set_connector_occupied(this->evse_id, this->connector_id, true);

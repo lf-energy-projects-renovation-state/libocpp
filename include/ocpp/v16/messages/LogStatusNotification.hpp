@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2020 - 2024 Pionix GmbH and Contributors to EVerest
+// Copyright 2020 - 2025 Pionix GmbH and Contributors to EVerest
 // This code is generated using the generator in 'src/code_generator/common`, please do not edit manually
 
 #ifndef OCPP_V16_LOGSTATUSNOTIFICATION_HPP
@@ -17,7 +17,7 @@ namespace v16 {
 /// \brief Contains a OCPP LogStatusNotification message
 struct LogStatusNotificationRequest : public ocpp::Message {
     UploadLogStatusEnumType status;
-    std::optional<int32_t> requestId;
+    std::optional<std::int32_t> requestId;
 
     /// \brief Provides the type of this LogStatusNotification message as a human readable string
     /// \returns the message type as a human readable string
@@ -31,7 +31,8 @@ void to_json(json& j, const LogStatusNotificationRequest& k);
 void from_json(const json& j, LogStatusNotificationRequest& k);
 
 /// \brief Writes the string representation of the given LogStatusNotificationRequest \p k to the given output stream \p
-/// os \returns an output stream with the LogStatusNotificationRequest written to
+/// os
+/// \returns an output stream with the LogStatusNotificationRequest written to
 std::ostream& operator<<(std::ostream& os, const LogStatusNotificationRequest& k);
 
 /// \brief Contains a OCPP LogStatusNotificationResponse message
@@ -49,7 +50,8 @@ void to_json(json& j, const LogStatusNotificationResponse& k);
 void from_json(const json& j, LogStatusNotificationResponse& k);
 
 /// \brief Writes the string representation of the given LogStatusNotificationResponse \p k to the given output stream
-/// \p os \returns an output stream with the LogStatusNotificationResponse written to
+/// \p os
+/// \returns an output stream with the LogStatusNotificationResponse written to
 std::ostream& operator<<(std::ostream& os, const LogStatusNotificationResponse& k);
 
 } // namespace v16

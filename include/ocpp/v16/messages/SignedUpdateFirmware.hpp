@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2020 - 2024 Pionix GmbH and Contributors to EVerest
+// Copyright 2020 - 2025 Pionix GmbH and Contributors to EVerest
 // This code is generated using the generator in 'src/code_generator/common`, please do not edit manually
 
 #ifndef OCPP_V16_SIGNEDUPDATEFIRMWARE_HPP
@@ -16,10 +16,10 @@ namespace v16 {
 
 /// \brief Contains a OCPP SignedUpdateFirmware message
 struct SignedUpdateFirmwareRequest : public ocpp::Message {
-    int32_t requestId;
+    std::int32_t requestId;
     FirmwareType firmware;
-    std::optional<int32_t> retries;
-    std::optional<int32_t> retryInterval;
+    std::optional<std::int32_t> retries;
+    std::optional<std::int32_t> retryInterval;
 
     /// \brief Provides the type of this SignedUpdateFirmware message as a human readable string
     /// \returns the message type as a human readable string
@@ -33,7 +33,8 @@ void to_json(json& j, const SignedUpdateFirmwareRequest& k);
 void from_json(const json& j, SignedUpdateFirmwareRequest& k);
 
 /// \brief Writes the string representation of the given SignedUpdateFirmwareRequest \p k to the given output stream \p
-/// os \returns an output stream with the SignedUpdateFirmwareRequest written to
+/// os
+/// \returns an output stream with the SignedUpdateFirmwareRequest written to
 std::ostream& operator<<(std::ostream& os, const SignedUpdateFirmwareRequest& k);
 
 /// \brief Contains a OCPP SignedUpdateFirmwareResponse message
@@ -52,7 +53,8 @@ void to_json(json& j, const SignedUpdateFirmwareResponse& k);
 void from_json(const json& j, SignedUpdateFirmwareResponse& k);
 
 /// \brief Writes the string representation of the given SignedUpdateFirmwareResponse \p k to the given output stream \p
-/// os \returns an output stream with the SignedUpdateFirmwareResponse written to
+/// os
+/// \returns an output stream with the SignedUpdateFirmwareResponse written to
 std::ostream& operator<<(std::ostream& os, const SignedUpdateFirmwareResponse& k);
 
 } // namespace v16

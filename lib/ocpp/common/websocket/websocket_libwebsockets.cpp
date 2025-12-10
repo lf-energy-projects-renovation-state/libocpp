@@ -33,7 +33,7 @@ using namespace std::chrono_literals;
 namespace {
 std::optional<std::filesystem::path> keylog_file;
 
-void keylog_callback(const SSL* ssl, const char* line) {
+void keylog_callback(const SSL* /*ssl*/, const char* line) {
     if (keylog_file.has_value()) {
         std::ofstream keylog_ofs;
         keylog_ofs.open(keylog_file.value(), std::ofstream::out | std::ofstream::app);
@@ -90,32 +90,32 @@ struct ConnectionData {
     }
 
     void bind_thread_client(std::thread::id id) {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         websocket_client_thread_id = id;
     }
 
     void bind_thread_message(std::thread::id id) {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         websocket_recv_thread_id = id;
     }
 
     std::thread::id get_client_thread_id() {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         return websocket_client_thread_id;
     }
 
     std::thread::id get_message_thread_id() {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         return websocket_recv_thread_id;
     }
 
     void update_state(EConnectionState in_state) {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         state = in_state;
     }
 
     EConnectionState get_state() {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         return state;
     }
 
@@ -125,7 +125,7 @@ struct ConnectionData {
             EVLOG_AND_THROW(std::runtime_error("Attempted to awake connection from websocket thread!"));
         }
 
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
 
         if (lws_ctx) {
             lws_cancel_service(lws_ctx.get());
@@ -139,7 +139,7 @@ struct ConnectionData {
             EVLOG_AND_THROW(std::runtime_error("Attempted to interrupt connection from websocket thread!"));
         }
 
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
 
         if (is_running) {
             is_running = false;
@@ -153,17 +153,17 @@ struct ConnectionData {
     }
 
     bool is_interupted() {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         return (is_running == false);
     }
 
     void mark_stop_executed() {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         this->is_stopped_run = true;
     }
 
     bool is_stop_executed() {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         return this->is_stopped_run;
     }
 
@@ -178,7 +178,7 @@ public:
         std::unique_ptr<lws_context> clear_lws;
 
         {
-            std::lock_guard lock(this->mutex);
+            const std::lock_guard lock(this->mutex);
             this->wsi = nullptr;
 
             if (this->sec_context) {
@@ -192,7 +192,7 @@ public:
     }
 
     void init_connection_context(lws_context* lws_ctx, SSL_CTX* ssl_ctx) {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
 
         if (this->lws_ctx || this->sec_context) {
             EVLOG_AND_THROW(std::runtime_error("Cleanup must be called before re-initing a connection!"));
@@ -204,23 +204,23 @@ public:
         // Causes a deadlock in callback_minimal if not reset
         this->lws_ctx = std::unique_ptr<lws_context>(lws_ctx);
 
-        if (ssl_ctx) {
+        if (ssl_ctx != nullptr) {
             this->sec_context = std::unique_ptr<SSL_CTX>(ssl_ctx);
         }
     }
 
     void init_connection(lws* lws) {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         this->wsi = lws;
     }
 
     lws* get_conn() {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         return wsi;
     }
 
     lws_context* get_context() {
-        std::lock_guard lock(this->mutex);
+        const std::lock_guard lock(this->mutex);
         return lws_ctx.get();
     }
 
@@ -271,18 +271,26 @@ public:
     std::atomic_bool message_sent;
 };
 
-static bool verify_csms_cn(const std::string& hostname, bool preverified, const X509_STORE_CTX* ctx,
-                           bool allow_wildcards) {
+namespace {
+int wildcard_X509_check_host(bool allow_wildcards, X509* server_cert, const std::string& hostname) {
+    if (allow_wildcards) {
+        return X509_check_host(server_cert, hostname.c_str(), hostname.length(), X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS,
+                               nullptr);
+    }
+    return X509_check_host(server_cert, hostname.c_str(), hostname.length(), X509_CHECK_FLAG_NO_WILDCARDS, nullptr);
+}
+
+bool verify_csms_cn(const std::string& hostname, bool preverified, const X509_STORE_CTX* ctx, bool allow_wildcards) {
 
     // Error depth gives the depth in the chain (with 0 = leaf certificate) where
     // a potential (!) error occurred; error here means current error code and can also be "OK".
     // This thus gives also the position (in the chain)  of the currently to be verified certificate.
     // If depth is 0, we need to check the leaf certificate;
     // If depth > 0, we are verifying a CA (or SUB-CA) certificate and thus trust "preverified"
-    int depth = X509_STORE_CTX_get_error_depth(ctx);
+    const int depth = X509_STORE_CTX_get_error_depth(ctx);
 
     if (!preverified) {
-        int error = X509_STORE_CTX_get_error(ctx);
+        const int error = X509_STORE_CTX_get_error(ctx);
         EVLOG_warning << "Invalid certificate error '" << X509_verify_cert_error_string(error) << "' (at chain depth '"
                       << depth << "')";
     }
@@ -297,32 +305,24 @@ static bool verify_csms_cn(const std::string& hostname, bool preverified, const 
         // when we can make libwebsocket take custom verification parameter
 
         // Verify host-name manually
-        int result;
-
-        if (allow_wildcards) {
-            result = X509_check_host(server_cert, hostname.c_str(), hostname.length(),
-                                     X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS, nullptr);
-        } else {
-            result = X509_check_host(server_cert, hostname.c_str(), hostname.length(), X509_CHECK_FLAG_NO_WILDCARDS,
-                                     nullptr);
-        }
+        const int result = wildcard_X509_check_host(allow_wildcards, server_cert, hostname);
 
         if (result != 1) {
-            X509_NAME* subject_name = X509_get_subject_name(server_cert);
-            char common_name[256];
+            const X509_NAME* subject_name = X509_get_subject_name(server_cert);
+            std::array<char, 256> common_name;
 
-            if (X509_NAME_get_text_by_NID(subject_name, NID_commonName, common_name, sizeof(common_name)) <= 0) {
+            if (X509_NAME_get_text_by_NID(subject_name, NID_commonName, common_name.data(), sizeof(common_name)) <= 0) {
                 EVLOG_error << "Failed to verify server certificate cn with hostname: " << hostname
-                            << " and with server certificate cs: " << common_name
+                            << " and with server certificate cs: " << common_name.data()
                             << " with wildcards: " << allow_wildcards;
             }
 
             if (not allow_wildcards) {
-                int wildcard_result = X509_check_host(server_cert, hostname.c_str(), hostname.length(),
-                                                      X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS, nullptr);
+                const int wildcard_result = X509_check_host(server_cert, hostname.c_str(), hostname.length(),
+                                                            X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS, nullptr);
                 if (result != wildcard_result) {
                     EVLOG_error << "Failed to verify server certificate hostname: \"" << hostname
-                                << "\". Server certificate common name \"" << common_name
+                                << "\". Server certificate common name \"" << common_name.data()
                                 << "\" likely contains wildcards. Please check your OCPP configuration and set "
                                    "VerifyCsmsAllowWildcards to true if you want to allow wildcard certificates.";
                 }
@@ -334,10 +334,11 @@ static bool verify_csms_cn(const std::string& hostname, bool preverified, const 
 
     return preverified;
 }
+} // namespace
 
 WebsocketLibwebsockets::WebsocketLibwebsockets(const WebsocketConnectionOptions& connection_options,
                                                std::shared_ptr<EvseSecurity> evse_security) :
-    WebsocketBase(),
+    WebsocketBase(), // NOLINT(readability-redundant-member-init): explicitly call base class ctor here for readability
     evse_security(evse_security),
     stop_deferred_handler(false),
     connected_ocpp_version{OcppProtocolVersion::Unknown} {
@@ -348,29 +349,34 @@ WebsocketLibwebsockets::WebsocketLibwebsockets(const WebsocketConnectionOptions&
 }
 
 WebsocketLibwebsockets::~WebsocketLibwebsockets() {
-    std::lock_guard lock(this->connection_mutex);
+    try {
+        const std::lock_guard lock(this->connection_mutex);
 
-    std::shared_ptr<ConnectionData> local_conn_data = conn_data;
-    if (local_conn_data != nullptr) {
-        auto tid = std::this_thread::get_id();
+        const std::shared_ptr<ConnectionData> local_conn_data = conn_data;
+        if (local_conn_data != nullptr) {
+            auto tid = std::this_thread::get_id();
 
-        if (tid == local_conn_data->get_client_thread_id() || tid == local_conn_data->get_message_thread_id()) {
-            EVLOG_error << "Trying to destruct websocket from utility thread!";
-            std::terminate();
+            if (tid == local_conn_data->get_client_thread_id() || tid == local_conn_data->get_message_thread_id()) {
+                EVLOG_error << "Trying to destruct websocket from utility thread!";
+                std::terminate();
+            }
         }
-    }
 
-    if (this->m_is_connected || is_trying_to_connect_internal()) {
-        this->close_internal(WebsocketCloseReason::Normal, "websocket destructor");
-    }
+        if (this->m_is_connected || is_trying_to_connect_internal()) {
+            this->close_internal(WebsocketCloseReason::Normal, "websocket destructor");
+        }
 
-    // In the dtor we must make sure the deferred callback thread
-    // finishes since the callbacks capture a reference to 'this'
-    if (this->deferred_callback_thread != nullptr && this->deferred_callback_thread->joinable()) {
-        this->stop_deferred_handler.store(true);
-        this->deferred_callback_queue.notify_waiting_thread();
+        // In the dtor we must make sure the deferred callback thread
+        // finishes since the callbacks capture a reference to 'this'
+        if (this->deferred_callback_thread != nullptr && this->deferred_callback_thread->joinable()) {
+            this->stop_deferred_handler.store(true);
+            this->deferred_callback_queue.notify_waiting_thread();
 
-        this->deferred_callback_thread->join();
+            this->deferred_callback_thread->join();
+        }
+    } catch (...) {
+        EVLOG_error << "Exception during dtor cleanup of websocket connection";
+        return;
     }
 }
 
@@ -411,23 +417,24 @@ void WebsocketLibwebsockets::set_connection_options(const WebsocketConnectionOpt
     this->connection_attempts = 1; // reset connection attempts
 }
 
-static int callback_minimal(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
+namespace {
+int callback_minimal(struct lws* wsi, enum lws_callback_reasons reason, void* user, void* in, size_t len) {
     // Get user safely, since on some callbacks (void *user) can be different than what we set
     if (wsi != nullptr) {
-        if (ConnectionData* data = reinterpret_cast<ConnectionData*>(lws_wsi_user(wsi))) {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
+        if (auto* data = reinterpret_cast<ConnectionData*>(lws_wsi_user(wsi))) {
             auto* owner = data->get_owner();
             if (owner not_eq nullptr) {
                 return owner->process_callback(wsi, static_cast<int>(reason), user, in, len);
-            } else {
-                EVLOG_debug << "callback_minimal called, but data->owner is nullptr. Reason: " << reason;
             }
+            EVLOG_debug << "callback_minimal called, but data->owner is nullptr. Reason: " << reason;
         }
     }
 
     return 0;
 }
 
-static int private_key_callback(char* buf, int size, int rwflag, void* userdata) {
+int private_key_callback(char* buf, int size, int /*rwflag*/, void* userdata) {
     const auto* password = static_cast<const std::string*>(userdata);
     const std::size_t max_pass_len = (size - 1); // we exclude the endline
     const std::size_t max_copy_chars =
@@ -436,12 +443,13 @@ static int private_key_callback(char* buf, int size, int rwflag, void* userdata)
     std::memset(buf, 0, size);
     std::memcpy(buf, password->c_str(), max_copy_chars);
 
-    return max_copy_chars;
+    return clamp_to<int>(max_copy_chars);
 }
+} // namespace
 
 constexpr auto local_protocol_name = "lws-everest-client";
-static const struct lws_protocols protocols[] = {{local_protocol_name, callback_minimal, 0, 0, 0, NULL, 0},
-                                                 LWS_PROTOCOL_LIST_TERM};
+static const std::array<struct lws_protocols, 2> protocols = {
+    {{local_protocol_name, callback_minimal, 0, 0, 0, nullptr, 0}, LWS_PROTOCOL_LIST_TERM}};
 
 bool WebsocketLibwebsockets::tls_init(SSL_CTX* ctx, const std::string& path_chain, const std::string& path_key,
                                       std::optional<std::string>& password) {
@@ -487,7 +495,7 @@ bool WebsocketLibwebsockets::tls_init(SSL_CTX* ctx, const std::string& path_chai
             return false;
         }
 
-        if (false == SSL_CTX_check_private_key(ctx)) {
+        if (0 == SSL_CTX_check_private_key(ctx)) {
             ERR_print_errors_fp(stderr);
             EVLOG_error << "Could not check private key within SSL context";
 
@@ -501,13 +509,13 @@ bool WebsocketLibwebsockets::tls_init(SSL_CTX* ctx, const std::string& path_chai
         EVLOG_info << "Loading CA csms bundle to verify server certificate: " << ca_csms;
 
         if (std::filesystem::is_directory(ca_csms)) {
-            rc = SSL_CTX_load_verify_locations(ctx, NULL, ca_csms.c_str());
+            rc = SSL_CTX_load_verify_locations(ctx, nullptr, ca_csms.c_str());
         } else {
-            rc = SSL_CTX_load_verify_locations(ctx, ca_csms.c_str(), NULL);
+            rc = SSL_CTX_load_verify_locations(ctx, ca_csms.c_str(), nullptr);
         }
 
         if (rc != 1) {
-            EVLOG_error << "Could not load CA verify locations, error: " << ERR_error_string(ERR_get_error(), NULL);
+            EVLOG_error << "Could not load CA verify locations, error: " << ERR_error_string(ERR_get_error(), nullptr);
             return false;
         }
     }
@@ -515,7 +523,8 @@ bool WebsocketLibwebsockets::tls_init(SSL_CTX* ctx, const std::string& path_chai
     if (this->connection_options.use_ssl_default_verify_paths) {
         rc = SSL_CTX_set_default_verify_paths(ctx);
         if (rc != 1) {
-            EVLOG_error << "Could not load default CA verify path, error: " << ERR_error_string(ERR_get_error(), NULL);
+            EVLOG_error << "Could not load default CA verify path, error: "
+                        << ERR_error_string(ERR_get_error(), nullptr);
             return false;
         }
     }
@@ -553,7 +562,7 @@ bool WebsocketLibwebsockets::tls_init(SSL_CTX* ctx, const std::string& path_chai
     */
 
     // Extra info
-    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, NULL); // to verify server certificate
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER, nullptr); // to verify server certificate
 
     return true;
 }
@@ -571,8 +580,9 @@ void WebsocketLibwebsockets::thread_websocket_message_recv_loop(std::shared_ptr<
             std::string message{};
 
             {
-                if (recv_message_queue.empty())
+                if (recv_message_queue.empty()) {
                     break;
+                }
 
                 message = recv_message_queue.pop();
             }
@@ -594,7 +604,7 @@ void WebsocketLibwebsockets::thread_websocket_message_recv_loop(std::shared_ptr<
     EVLOG_debug << "Exit recv loop with ID: " << std::hex << std::this_thread::get_id();
 }
 
-bool WebsocketLibwebsockets::initialize_connection_options(std::shared_ptr<ConnectionData>& local_data) {
+bool WebsocketLibwebsockets::initialize_connection_options(std::shared_ptr<ConnectionData>& new_connection_data) {
     // lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE | LLL_INFO | LLL_DEBUG | LLL_PARSER | LLL_HEADER | LLL_EXT |
     //                          LLL_CLIENT | LLL_LATENCY | LLL_THREAD | LLL_USER, nullptr);
     lws_set_log_level(LLL_ERR, nullptr);
@@ -604,7 +614,7 @@ bool WebsocketLibwebsockets::initialize_connection_options(std::shared_ptr<Conne
 
     info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
     info.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
-    info.protocols = protocols;
+    info.protocols = protocols.data();
 
     if (this->connection_options.iface.has_value()) {
         EVLOG_info << "Using network iface: " << this->connection_options.iface.value().c_str();
@@ -614,7 +624,7 @@ bool WebsocketLibwebsockets::initialize_connection_options(std::shared_ptr<Conne
     }
 
     // Set reference to ConnectionData since 'data' can go away in the websocket
-    info.user = local_data.get();
+    info.user = new_connection_data.get();
 
     info.fd_limit_per_thread = 1 + 1 + 1;
 
@@ -685,7 +695,7 @@ bool WebsocketLibwebsockets::initialize_connection_options(std::shared_ptr<Conne
     }
 
     // Conn acquire the lws context and security context
-    local_data->init_connection_context(lws_ctx, ssl_ctx);
+    new_connection_data->init_connection_context(lws_ctx, ssl_ctx);
     return true;
 }
 
@@ -873,7 +883,7 @@ void WebsocketLibwebsockets::clear_all_queues() {
 
 void WebsocketLibwebsockets::safe_close_threads() {
     // If we already have a connection attempt started for now shut it down first
-    std::shared_ptr<ConnectionData> local_conn_data = conn_data;
+    const std::shared_ptr<ConnectionData> local_conn_data = conn_data;
     bool in_message_thread = false;
 
     if (local_conn_data != nullptr) {
@@ -925,18 +935,18 @@ void WebsocketLibwebsockets::safe_close_threads() {
 }
 
 bool WebsocketLibwebsockets::is_trying_to_connect() {
-    std::lock_guard lock(this->connection_mutex);
+    const std::lock_guard lock(this->connection_mutex);
     return is_trying_to_connect_internal();
 }
 
 bool WebsocketLibwebsockets::is_trying_to_connect_internal() {
-    std::shared_ptr<ConnectionData> local_conn_data = conn_data;
+    const std::shared_ptr<ConnectionData> local_conn_data = conn_data;
     return (local_conn_data != nullptr) && (local_conn_data->get_state() != EConnectionState::FINALIZED);
 }
 
 // Will be called from external threads as well
 bool WebsocketLibwebsockets::start_connecting() {
-    std::lock_guard lock(this->connection_mutex);
+    const std::lock_guard lock(this->connection_mutex);
 
     if (!this->initialized()) {
         EVLOG_error << "Websocket not properly initialized. A reconnect attempt will not be made.";
@@ -960,7 +970,7 @@ bool WebsocketLibwebsockets::start_connecting() {
 
     // Stop any pending reconnect timer
     {
-        std::lock_guard<std::mutex> lk(this->reconnect_mutex);
+        const std::lock_guard<std::mutex> lk(this->reconnect_mutex);
         this->reconnect_timer_tpm.stop();
     }
 
@@ -993,12 +1003,12 @@ bool WebsocketLibwebsockets::start_connecting() {
 }
 
 void WebsocketLibwebsockets::close(const WebsocketCloseReason code, const std::string& reason) {
-    std::lock_guard lock(this->connection_mutex);
+    const std::lock_guard lock(this->connection_mutex);
     close_internal(code, reason);
 }
 
 void WebsocketLibwebsockets::close_internal(const WebsocketCloseReason code, const std::string& reason) {
-    bool trying_connecting = is_trying_to_connect_internal() || this->m_is_connected;
+    const bool trying_connecting = is_trying_to_connect_internal() || this->m_is_connected;
 
     if (!trying_connecting) {
         EVLOG_warning << "Trying to close inactive websocket with code: " << (int)code << " and reason: " << reason
@@ -1016,13 +1026,13 @@ void WebsocketLibwebsockets::close_internal(const WebsocketCloseReason code, con
     this->m_is_connected = false;
 
     {
-        std::lock_guard<std::mutex> lk(this->reconnect_mutex);
+        const std::lock_guard<std::mutex> lk(this->reconnect_mutex);
         this->reconnect_timer_tpm.stop();
     }
 }
 
 void WebsocketLibwebsockets::reconnect(long delay) {
-    std::lock_guard lock(this->connection_mutex);
+    const std::lock_guard lock(this->connection_mutex);
 
     if (this->shutting_down) {
         EVLOG_info << "Not reconnecting because the websocket is being shutdown.";
@@ -1036,7 +1046,7 @@ void WebsocketLibwebsockets::reconnect(long delay) {
     EVLOG_info << "Externally called reconnect in: " << delay << "ms"
                << ", attempt: " << this->connection_attempts;
 
-    std::lock_guard<std::mutex> lk(this->reconnect_mutex);
+    const std::lock_guard<std::mutex> lk(this->reconnect_mutex);
     this->reconnect_timer_tpm.timeout(
         [this]() {
             // close connection before reconnecting
@@ -1049,15 +1059,17 @@ void WebsocketLibwebsockets::reconnect(long delay) {
         std::chrono::milliseconds(delay));
 }
 
-static bool send_internal(lws* wsi, WebsocketMessage* msg) {
+namespace {
+bool send_internal(lws* wsi, WebsocketMessage* msg) {
     static std::vector<char> buff;
 
     std::string& message = msg->payload;
-    size_t message_len = message.length();
-    size_t buff_req_size = message_len + LWS_PRE;
+    const size_t message_len = message.length();
+    const size_t buff_req_size = message_len + LWS_PRE;
 
-    if (buff.size() < buff_req_size)
+    if (buff.size() < buff_req_size) {
         buff.resize(buff_req_size);
+    }
 
     // Copy data in send buffer
     memcpy(&buff[LWS_PRE], message.data(), message_len);
@@ -1072,6 +1084,7 @@ static bool send_internal(lws* wsi, WebsocketMessage* msg) {
     // int flags = lws_write_ws_flags(proto, is_start, is_end);
     // already_written += lws_write(wsi, buff + LWS_PRE, BUFF_SIZE - LWS_PRE, flags);
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
     auto sent = lws_write(wsi, reinterpret_cast<unsigned char*>(&buff[LWS_PRE]), message_len, msg->protocol);
 
     if (sent < 0) {
@@ -1095,10 +1108,11 @@ static bool send_internal(lws* wsi, WebsocketMessage* msg) {
 
     return true;
 }
+} // namespace
 
 void WebsocketLibwebsockets::request_write() {
     if (this->m_is_connected) {
-        std::shared_ptr<ConnectionData> local_data = conn_data;
+        const std::shared_ptr<ConnectionData> local_data = conn_data;
 
         if (local_data != nullptr) {
             // Notify waiting processing thread to wake up. According to docs
@@ -1116,7 +1130,7 @@ void WebsocketLibwebsockets::poll_message(const std::shared_ptr<WebsocketMessage
         return;
     }
 
-    std::shared_ptr<ConnectionData> local_data = conn_data;
+    const std::shared_ptr<ConnectionData> local_data = conn_data;
 
     if (local_data != nullptr) {
         auto cd_tid = local_data->get_client_thread_id();
@@ -1156,7 +1170,7 @@ bool WebsocketLibwebsockets::send(const std::string& message) {
     }
 
     auto msg = std::make_shared<WebsocketMessage>();
-    msg->payload = std::move(message);
+    msg->payload = message;
     msg->protocol = LWS_WRITE_TEXT;
 
     poll_message(msg);
@@ -1177,13 +1191,15 @@ void WebsocketLibwebsockets::ping() {
 }
 
 int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason, void* user, void* in, size_t len) {
-    enum lws_callback_reasons reason = static_cast<lws_callback_reasons>(callback_reason);
+    const auto reason = static_cast<lws_callback_reasons>(callback_reason);
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
     lws* wsi = reinterpret_cast<lws*>(wsi_ptr);
 
     // The ConnectionData is thread bound, so that if we clear it in the 'WebsocketLibwebsockets'
     // we still have a chance to close the connection here
-    ConnectionData* data = reinterpret_cast<ConnectionData*>(lws_wsi_user(wsi));
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
+    auto* data = reinterpret_cast<ConnectionData*>(lws_wsi_user(wsi));
 
     // If we are in the process of deletion, just close socket and return
     if (nullptr == data) {
@@ -1199,9 +1215,10 @@ int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason,
             // 'user' is X509_STORE and 'len' is preverify_ok (1) in case the pre-verification was successful
             EVLOG_debug << "Verifying server certs!";
 
-            if (!verify_csms_cn(this->connection_options.csms_uri.get_hostname(), (len == 1),
-                                reinterpret_cast<X509_STORE_CTX*>(user),
-                                this->connection_options.verify_csms_allow_wildcards)) {
+            if (!verify_csms_cn(
+                    this->connection_options.csms_uri.get_hostname(), (len == 1),
+                    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
+                    reinterpret_cast<X509_STORE_CTX*>(user), this->connection_options.verify_csms_allow_wildcards)) {
                 this->push_deferred_callback([this]() {
                     if (this->connection_failed_callback) {
                         this->connection_failed_callback(ConnectionFailedReason::InvalidCSMSCertificate);
@@ -1221,15 +1238,21 @@ int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason,
     case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER: {
         EVLOG_debug << "Handshake with security profile: " << this->connection_options.security_profile;
 
-        unsigned char **ptr = reinterpret_cast<unsigned char**>(in), *end_header = (*ptr) + len;
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
+        auto ptr = reinterpret_cast<unsigned char**>(in);
+        unsigned char* end_header = (*ptr) + len;
 
         if (this->connection_options.hostName.has_value()) {
             auto& str = this->connection_options.hostName.value();
             EVLOG_info << "User-Host is set to " << str;
 
-            if (0 != lws_add_http_header_by_name(wsi, reinterpret_cast<const unsigned char*>("User-Host"),
-                                                 reinterpret_cast<const unsigned char*>(str.c_str()), str.length(), ptr,
-                                                 end_header)) {
+            if (0 != lws_add_http_header_by_name(
+                         wsi,
+                         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
+                         reinterpret_cast<const unsigned char*>("User-Host"),
+                         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
+                         reinterpret_cast<const unsigned char*>(str.c_str()), clamp_to<int>(str.length()), ptr,
+                         end_header)) {
                 EVLOG_AND_THROW(std::runtime_error("Could not append User-Host header."));
             }
         }
@@ -1240,9 +1263,11 @@ int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason,
             if (authorization_header != std::nullopt) {
                 auto& str = authorization_header.value();
 
-                if (0 != lws_add_http_header_by_token(wsi, lws_token_indexes::WSI_TOKEN_HTTP_AUTHORIZATION,
-                                                      reinterpret_cast<const unsigned char*>(str.c_str()), str.length(),
-                                                      ptr, end_header)) {
+                if (0 != lws_add_http_header_by_token(
+                             wsi, lws_token_indexes::WSI_TOKEN_HTTP_AUTHORIZATION,
+                             // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
+                             reinterpret_cast<const unsigned char*>(str.c_str()), clamp_to<int>(str.length()), ptr,
+                             end_header)) {
                     EVLOG_AND_THROW(std::runtime_error("Could not append authorization header."));
                 }
 
@@ -1264,7 +1289,8 @@ int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason,
     } break;
 
     case LWS_CALLBACK_CLIENT_CONNECTION_ERROR: {
-        std::string error_message = (in ? reinterpret_cast<char*>(in) : "(null)");
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
+        std::string error_message = ((in != nullptr) ? reinterpret_cast<char*>(in) : "(null)");
         EVLOG_error << "CLIENT_CONNECTION_ERROR: [" << error_message << "]. Attempting reconnect";
         ERR_print_errors_fp(stderr);
 
@@ -1290,9 +1316,9 @@ int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason,
 
     case LWS_CALLBACK_CLIENT_FILTER_PRE_ESTABLISH:
         try {
-            char buffer[16] = {0};
-            lws_hdr_copy(wsi, buffer, 16, WSI_TOKEN_PROTOCOL);
-            this->connected_ocpp_version = ocpp::conversions::string_to_ocpp_protocol_version(buffer);
+            std::array<char, 16> buffer = {0};
+            lws_hdr_copy(wsi, buffer.data(), 16, WSI_TOKEN_PROTOCOL);
+            this->connected_ocpp_version = ocpp::conversions::string_to_ocpp_protocol_version(buffer.data());
         } catch (StringToEnumException& e) {
             EVLOG_warning << "CSMS did not select protocol: " << e.what();
             this->connected_ocpp_version = OcppProtocolVersion::Unknown;
@@ -1308,9 +1334,11 @@ int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason,
         break;
 
     case LWS_CALLBACK_WS_PEER_INITIATED_CLOSE: {
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
         std::string close_reason(reinterpret_cast<char*>(in), len);
-        unsigned char* pp = reinterpret_cast<unsigned char*>(in);
-        unsigned short close_code = (unsigned short)((pp[0] << 8) | pp[1]);
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
+        const unsigned char* pp = reinterpret_cast<unsigned char*>(in);
+        const auto close_code = (unsigned short)((pp[0] << 8) | pp[1]);
 
         // In the case that the websocket (server) has closed the
         // connection we  must ALWAYS try to reconnect
@@ -1359,6 +1387,7 @@ int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason,
     } break;
 
     case LWS_CALLBACK_CLIENT_RECEIVE:
+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast): needed for appropriate type
         recv_buffered_message.append(reinterpret_cast<char*>(in), reinterpret_cast<char*>(in) + len);
 
         // Message is complete
@@ -1493,7 +1522,7 @@ int WebsocketLibwebsockets::process_callback(void* wsi_ptr, int callback_reason,
     return 0;
 }
 
-void WebsocketLibwebsockets::on_conn_connected(ConnectionData* conn_data) {
+void WebsocketLibwebsockets::on_conn_connected(ConnectionData* /*conn_data*/) {
     // Called on the websocket client thread
     EVLOG_info << "OCPP client successfully connected to server with version: " << this->connected_ocpp_version;
 
@@ -1505,7 +1534,7 @@ void WebsocketLibwebsockets::on_conn_connected(ConnectionData* conn_data) {
 
     // Stop any dangling reconnect
     {
-        std::lock_guard<std::mutex> lk(this->reconnect_mutex);
+        const std::lock_guard<std::mutex> lk(this->reconnect_mutex);
         this->reconnect_timer_tpm.stop();
     }
 
@@ -1533,7 +1562,7 @@ void WebsocketLibwebsockets::on_conn_close(ConnectionData* conn_data) {
     }
 
     {
-        std::lock_guard<std::mutex> lk(this->reconnect_mutex);
+        const std::lock_guard<std::mutex> lk(this->reconnect_mutex);
         this->reconnect_timer_tpm.stop();
     }
 
@@ -1558,7 +1587,7 @@ void WebsocketLibwebsockets::on_conn_close(ConnectionData* conn_data) {
     conn_data->mark_stop_executed();
 }
 
-void WebsocketLibwebsockets::on_conn_fail(ConnectionData* conn_data) {
+void WebsocketLibwebsockets::on_conn_fail(ConnectionData* /*conn_data*/) {
     // Called on the websocket client thread
     EVLOG_error << "OCPP client connection to server failed";
 
@@ -1603,7 +1632,7 @@ void WebsocketLibwebsockets::on_conn_writable() {
         return;
     }
 
-    std::shared_ptr<ConnectionData> local_data = conn_data;
+    const std::shared_ptr<ConnectionData> local_data = conn_data;
 
     if (local_data == nullptr) {
         EVLOG_error << "Message sending TLS websocket with null connection data!";
@@ -1618,8 +1647,9 @@ void WebsocketLibwebsockets::on_conn_writable() {
     // Execute while we have messages that were polled
     while (true) {
         // Break if we have en empty queue
-        if (message_queue.empty())
+        if (message_queue.empty()) {
             break;
+        }
 
         auto message = message_queue.front();
 
@@ -1659,7 +1689,7 @@ void WebsocketLibwebsockets::on_conn_writable() {
         }
 
         // Continue sending message part, for a single message only
-        bool sent = send_internal(local_data->get_conn(), message.get());
+        const bool sent = send_internal(local_data->get_conn(), message.get());
 
         // If we failed, attempt again later
         if (!sent) {

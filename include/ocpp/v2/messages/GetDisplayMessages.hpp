@@ -17,8 +17,8 @@ namespace v2 {
 
 /// \brief Contains a OCPP GetDisplayMessages message
 struct GetDisplayMessagesRequest : public ocpp::Message {
-    int32_t requestId;
-    std::optional<std::vector<int32_t>> id;
+    std::int32_t requestId;
+    std::optional<std::vector<std::int32_t>> id;
     std::optional<MessagePriorityEnum> priority;
     std::optional<MessageStateEnum> state;
     std::optional<CustomData> customData;
@@ -56,7 +56,8 @@ void to_json(json& j, const GetDisplayMessagesResponse& k);
 void from_json(const json& j, GetDisplayMessagesResponse& k);
 
 /// \brief Writes the string representation of the given GetDisplayMessagesResponse \p k to the given output stream \p
-/// os \returns an output stream with the GetDisplayMessagesResponse written to
+/// os
+/// \returns an output stream with the GetDisplayMessagesResponse written to
 std::ostream& operator<<(std::ostream& os, const GetDisplayMessagesResponse& k);
 
 } // namespace v2

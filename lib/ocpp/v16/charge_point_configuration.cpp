@@ -24,12 +24,12 @@ const size_t SECC_LEAF_SUBJECT_COUNTRY_LENGTH = 2;
 const size_t SECC_LEAF_SUBJECT_COMMON_NAME_MIN_LENGTH = 7;
 const size_t SECC_LEAF_SUBJECT_COMMON_NAME_MAX_LENGTH = 64;
 const size_t AUTHORIZATION_KEY_MIN_LENGTH = 8;
-const int32_t MAX_WAIT_FOR_SET_USER_PRICE_TIMEOUT_MS = 30000;
+const std::int32_t MAX_WAIT_FOR_SET_USER_PRICE_TIMEOUT_MS = 30000;
 
 ChargePointConfiguration::ChargePointConfiguration(const std::string& config, const fs::path& ocpp_main_path,
-                                                   const fs::path& user_config_path) {
+                                                   const fs::path& user_config_path) :
+    user_config_path(user_config_path) {
 
-    this->user_config_path = user_config_path;
     if (!fs::exists(this->user_config_path)) {
         EVLOG_critical << "User config file does not exist";
         throw std::runtime_error("User config file does not exist");
@@ -44,7 +44,8 @@ ChargePointConfiguration::ChargePointConfiguration(const std::string& config, co
         const auto custom_schema_path = schemas_path / "Custom.json";
         if (fs::exists(custom_schema_path)) {
             std::ifstream ifs(custom_schema_path.c_str());
-            std::string custom_schema_file((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+            const std::string custom_schema_file((std::istreambuf_iterator<char>(ifs)),
+                                                 (std::istreambuf_iterator<char>()));
             this->custom_schema = json::parse(custom_schema_file);
         }
     } catch (const json::parse_error& e) {
@@ -55,7 +56,8 @@ ChargePointConfiguration::ChargePointConfiguration(const std::string& config, co
     try {
         const auto internal_schema_path = schemas_path / "Internal.json";
         std::ifstream ifs(internal_schema_path.c_str());
-        std::string internal_schema_file((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+        const std::string internal_schema_file((std::istreambuf_iterator<char>(ifs)),
+                                               (std::istreambuf_iterator<char>()));
         this->internal_schema = json::parse(internal_schema_file);
     } catch (const json::parse_error& e) {
         EVLOG_error << "Error while parsing Internal.json file.";
@@ -66,7 +68,8 @@ ChargePointConfiguration::ChargePointConfiguration(const std::string& config, co
         const auto core_schema_path = schemas_path / "Core.json";
         if (fs::exists(core_schema_path)) {
             std::ifstream ifs(core_schema_path.c_str());
-            std::string core_schema_file((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+            const std::string core_schema_file((std::istreambuf_iterator<char>(ifs)),
+                                               (std::istreambuf_iterator<char>()));
             const auto core_schema = json::parse(core_schema_file);
             this->core_schema_unlock_connector_on_ev_side_disconnect_ro_value =
                 core_schema["properties"]["UnlockConnectorOnEVSideDisconnect"]["readOnly"];
@@ -216,7 +219,7 @@ json ChargePointConfiguration::get_user_config() {
     if (fs::exists(this->user_config_path)) {
         // reading from and overriding to existing user config
         std::fstream ifs(user_config_path.c_str());
-        std::string user_config_file((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
+        const std::string user_config_file((std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>()));
         ifs.close();
         return json::parse(user_config_file);
     }
@@ -244,6 +247,7 @@ void ChargePointConfiguration::setInUserConfig(std::string profile, std::string 
     }
 }
 
+namespace {
 std::string to_csl(const std::vector<std::string>& vec) {
     std::string csl;
     for (auto it = vec.begin(); it != vec.end(); ++it) {
@@ -254,6 +258,7 @@ std::string to_csl(const std::vector<std::string>& vec) {
     }
     return csl;
 }
+} // namespace
 
 void ChargePointConfiguration::init_supported_measurands() {
     const auto _supported_measurands = ocpp::split_string(this->config["Internal"]["SupportedMeasurands"], ',');
@@ -438,11 +443,11 @@ bool ChargePointConfiguration::getLogRotationDateSuffix() {
     return this->config["Internal"]["LogRotationDateSuffix"];
 }
 
-uint64_t ChargePointConfiguration::getLogRotationMaximumFileSize() {
+std::uint64_t ChargePointConfiguration::getLogRotationMaximumFileSize() {
     return this->config["Internal"]["LogRotationMaximumFileSize"];
 }
 
-uint64_t ChargePointConfiguration::getLogRotationMaximumFileCount() {
+std::uint64_t ChargePointConfiguration::getLogRotationMaximumFileCount() {
     return this->config["Internal"]["LogRotationMaximumFileCount"];
 }
 
@@ -482,7 +487,7 @@ bool ChargePointConfiguration::setIgnoredProfilePurposesOffline(const std::strin
     }
 
     const auto profile_purposes = split_string(ignored_profile_purposes_offline, ',');
-    for (const auto purpose : profile_purposes) {
+    for (const auto& purpose : profile_purposes) {
         try {
             conversions::string_to_charging_profile_purpose_type(purpose);
         } catch (const StringToEnumException& e) {
@@ -496,11 +501,11 @@ bool ChargePointConfiguration::setIgnoredProfilePurposesOffline(const std::strin
     return true;
 }
 
-int32_t ChargePointConfiguration::getMaxCompositeScheduleDuration() {
+std::int32_t ChargePointConfiguration::getMaxCompositeScheduleDuration() {
     return this->config["Internal"]["MaxCompositeScheduleDuration"];
 }
 
-std::optional<int32_t> ChargePointConfiguration::getCompositeScheduleDefaultLimitAmps() {
+std::optional<std::int32_t> ChargePointConfiguration::getCompositeScheduleDefaultLimitAmps() {
     if (this->config["Internal"].contains("CompositeScheduleDefaultLimitAmps")) {
         return this->config["Internal"]["CompositeScheduleDefaultLimitAmps"];
     }
@@ -519,14 +524,14 @@ std::optional<KeyValue> ChargePointConfiguration::getCompositeScheduleDefaultLim
     return std::nullopt;
 }
 
-void ChargePointConfiguration::setCompositeScheduleDefaultLimitAmps(int32_t limit_amps) {
+void ChargePointConfiguration::setCompositeScheduleDefaultLimitAmps(std::int32_t limit_amps) {
     if (this->getCompositeScheduleDefaultLimitAmps() != std::nullopt) {
         this->config["Internal"]["CompositeScheduleDefaultLimitAmps"] = limit_amps;
         this->setInUserConfig("Internal", "CompositeScheduleDefaultLimitAmps", limit_amps);
     }
 }
 
-std::optional<int32_t> ChargePointConfiguration::getCompositeScheduleDefaultLimitWatts() {
+std::optional<std::int32_t> ChargePointConfiguration::getCompositeScheduleDefaultLimitWatts() {
     if (this->config["Internal"].contains("CompositeScheduleDefaultLimitWatts")) {
         return this->config["Internal"]["CompositeScheduleDefaultLimitWatts"];
     }
@@ -545,14 +550,14 @@ std::optional<KeyValue> ChargePointConfiguration::getCompositeScheduleDefaultLim
     return std::nullopt;
 }
 
-void ChargePointConfiguration::setCompositeScheduleDefaultLimitWatts(int32_t limit_watts) {
+void ChargePointConfiguration::setCompositeScheduleDefaultLimitWatts(std::int32_t limit_watts) {
     if (this->getCompositeScheduleDefaultLimitWatts() != std::nullopt) {
         this->config["Internal"]["CompositeScheduleDefaultLimitWatts"] = limit_watts;
         this->setInUserConfig("Internal", "CompositeScheduleDefaultLimitWatts", limit_watts);
     }
 }
 
-std::optional<int32_t> ChargePointConfiguration::getCompositeScheduleDefaultNumberPhases() {
+std::optional<std::int32_t> ChargePointConfiguration::getCompositeScheduleDefaultNumberPhases() {
     if (this->config["Internal"].contains("CompositeScheduleDefaultNumberPhases")) {
         return this->config["Internal"]["CompositeScheduleDefaultNumberPhases"];
     }
@@ -571,14 +576,14 @@ std::optional<KeyValue> ChargePointConfiguration::getCompositeScheduleDefaultNum
     return std::nullopt;
 }
 
-void ChargePointConfiguration::setCompositeScheduleDefaultNumberPhases(int32_t number_phases) {
+void ChargePointConfiguration::setCompositeScheduleDefaultNumberPhases(std::int32_t number_phases) {
     if (this->getCompositeScheduleDefaultNumberPhases() != std::nullopt) {
         this->config["Internal"]["CompositeScheduleDefaultNumberPhases"] = number_phases;
         this->setInUserConfig("Internal", "CompositeScheduleDefaultNumberPhases", number_phases);
     }
 }
 
-std::optional<int32_t> ChargePointConfiguration::getSupplyVoltage() {
+std::optional<std::int32_t> ChargePointConfiguration::getSupplyVoltage() {
     if (this->config["Internal"].contains("SupplyVoltage")) {
         return this->config["Internal"]["SupplyVoltage"];
     }
@@ -597,7 +602,7 @@ std::optional<KeyValue> ChargePointConfiguration::getSupplyVoltageKeyValue() {
     return std::nullopt;
 }
 
-void ChargePointConfiguration::setSupplyVoltage(int32_t supply_voltage) {
+void ChargePointConfiguration::setSupplyVoltage(std::int32_t supply_voltage) {
     if (this->getSupplyVoltage().has_value()) {
         this->config["Internal"]["SupplyVoltage"] = supply_voltage;
         this->setInUserConfig("Internal", "SupplyVoltage", supply_voltage);
@@ -605,12 +610,12 @@ void ChargePointConfiguration::setSupplyVoltage(int32_t supply_voltage) {
 }
 
 std::string ChargePointConfiguration::getSupportedCiphers12() {
-    std::vector<std::string> supported_ciphers = this->config["Internal"]["SupportedCiphers12"];
+    const std::vector<std::string> supported_ciphers = this->config["Internal"]["SupportedCiphers12"];
     return boost::algorithm::join(supported_ciphers, ":");
 }
 
 std::string ChargePointConfiguration::getSupportedCiphers13() {
-    std::vector<std::string> supported_ciphers = this->config["Internal"]["SupportedCiphers13"];
+    const std::vector<std::string> supported_ciphers = this->config["Internal"]["SupportedCiphers13"];
     return boost::algorithm::join(supported_ciphers, ":");
 }
 
@@ -965,11 +970,11 @@ KeyValue ChargePointConfiguration::getWebsocketPongTimeoutKeyValue() {
     return kv;
 }
 
-int32_t ChargePointConfiguration::getRetryBackoffRandomRange() {
+std::int32_t ChargePointConfiguration::getRetryBackoffRandomRange() {
     return this->config["Internal"]["RetryBackoffRandomRange"];
 }
 
-void ChargePointConfiguration::setRetryBackoffRandomRange(int32_t retry_backoff_random_range) {
+void ChargePointConfiguration::setRetryBackoffRandomRange(std::int32_t retry_backoff_random_range) {
     this->config["Internal"]["RetryBackoffRandomRange"] = retry_backoff_random_range;
     this->setInUserConfig("Internal", "RetryBackoffRandomRange", retry_backoff_random_range);
 }
@@ -982,11 +987,11 @@ KeyValue ChargePointConfiguration::getRetryBackoffRandomRangeKeyValue() {
     return kv;
 }
 
-int32_t ChargePointConfiguration::getRetryBackoffRepeatTimes() {
+std::int32_t ChargePointConfiguration::getRetryBackoffRepeatTimes() {
     return this->config["Internal"]["RetryBackoffRepeatTimes"];
 }
 
-void ChargePointConfiguration::setRetryBackoffRepeatTimes(int32_t retry_backoff_repeat_times) {
+void ChargePointConfiguration::setRetryBackoffRepeatTimes(std::int32_t retry_backoff_repeat_times) {
     this->config["Internal"]["RetryBackoffRepeatTimes"] = retry_backoff_repeat_times;
     this->setInUserConfig("Internal", "RetryBackoffRepeatTimes", retry_backoff_repeat_times);
 }
@@ -999,11 +1004,11 @@ KeyValue ChargePointConfiguration::getRetryBackoffRepeatTimesKeyValue() {
     return kv;
 }
 
-int32_t ChargePointConfiguration::getRetryBackoffWaitMinimum() {
+std::int32_t ChargePointConfiguration::getRetryBackoffWaitMinimum() {
     return this->config["Internal"]["RetryBackoffWaitMinimum"];
 }
 
-void ChargePointConfiguration::setRetryBackoffWaitMinimum(int32_t retry_backoff_wait_minimum) {
+void ChargePointConfiguration::setRetryBackoffWaitMinimum(std::int32_t retry_backoff_wait_minimum) {
     this->config["Internal"]["RetryBackoffWaitMinimum"] = retry_backoff_wait_minimum;
     this->setInUserConfig("Internal", "RetryBackoffWaitMinimum", retry_backoff_wait_minimum);
 }
@@ -1026,9 +1031,9 @@ std::vector<MeasurandWithPhase> ChargePointConfiguration::csv_to_measurand_with_
     }
     for (const auto& component : components) {
         MeasurandWithPhase measurand_with_phase;
-        Measurand measurand = conversions::string_to_measurand(component);
+        const Measurand measurand = conversions::string_to_measurand(component);
         // check if this measurand can be provided on multiple phases
-        if (this->supported_measurands.count(measurand) and this->supported_measurands.at(measurand).size() > 0) {
+        if ((this->supported_measurands.count(measurand) != 0) and !this->supported_measurands.at(measurand).empty()) {
             // multiple phases are available
             // also add the measurand without a phase as a total value
             measurand_with_phase.measurand = measurand;
@@ -1070,7 +1075,7 @@ bool ChargePointConfiguration::validate_measurands(const json& config) {
     measurands_vector.push_back(config["Core"]["StopTxnAlignedData"]);
     measurands_vector.push_back(config["Core"]["StopTxnSampledData"]);
 
-    for (const auto measurands : measurands_vector) {
+    for (const auto& measurands : measurands_vector) {
         if (!this->measurands_supported(measurands)) {
             return false;
         }
@@ -1078,6 +1083,7 @@ bool ChargePointConfiguration::validate_measurands(const json& config) {
     return true;
 }
 
+namespace {
 bool validate_connector_evse_ids(const std::string& value) {
     if (value.length() > CONNECTOR_EVSE_IDS_MAX_LENGTH) {
         return false;
@@ -1093,6 +1099,7 @@ bool validate_connector_evse_ids(const std::string& value) {
     }
     return true;
 }
+} // namespace
 
 bool ChargePointConfiguration::measurands_supported(std::string csv) {
 
@@ -1144,7 +1151,7 @@ std::string ChargePointConfiguration::getWebsocketPingPayload() {
     return this->config["Internal"]["WebsocketPingPayload"];
 }
 
-int32_t ChargePointConfiguration::getWebsocketPongTimeout() {
+std::int32_t ChargePointConfiguration::getWebsocketPongTimeout() {
     return this->config["Internal"]["WebsocketPongTimeout"];
 }
 
@@ -1297,14 +1304,14 @@ KeyValue ChargePointConfiguration::getAuthorizeRemoteTxRequestsKeyValue() {
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getBlinkRepeat() {
-    std::optional<int32_t> blink_repeat = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getBlinkRepeat() {
+    std::optional<std::int32_t> blink_repeat = std::nullopt;
     if (this->config["Core"].contains("BlinkRepeat")) {
         blink_repeat.emplace(this->config["Core"]["BlinkRepeat"]);
     }
     return blink_repeat;
 }
-void ChargePointConfiguration::setBlinkRepeat(int32_t blink_repeat) {
+void ChargePointConfiguration::setBlinkRepeat(std::int32_t blink_repeat) {
     if (this->getBlinkRepeat() != std::nullopt) {
         this->config["Core"]["BlinkRepeat"] = blink_repeat;
         this->setInUserConfig("Core", "BlinkRepeat", blink_repeat);
@@ -1324,10 +1331,10 @@ std::optional<KeyValue> ChargePointConfiguration::getBlinkRepeatKeyValue() {
 }
 
 // Core Profile
-int32_t ChargePointConfiguration::getClockAlignedDataInterval() {
+std::int32_t ChargePointConfiguration::getClockAlignedDataInterval() {
     return this->config["Core"]["ClockAlignedDataInterval"];
 }
-void ChargePointConfiguration::setClockAlignedDataInterval(int32_t interval) {
+void ChargePointConfiguration::setClockAlignedDataInterval(std::int32_t interval) {
     this->config["Core"]["ClockAlignedDataInterval"] = interval;
     this->setInUserConfig("Core", "ClockAlignedDataInterval", interval);
 }
@@ -1340,10 +1347,10 @@ KeyValue ChargePointConfiguration::getClockAlignedDataIntervalKeyValue() {
 }
 
 // Core Profile
-int32_t ChargePointConfiguration::getConnectionTimeOut() {
+std::int32_t ChargePointConfiguration::getConnectionTimeOut() {
     return this->config["Core"]["ConnectionTimeOut"];
 }
-void ChargePointConfiguration::setConnectionTimeOut(int32_t timeout) {
+void ChargePointConfiguration::setConnectionTimeOut(std::int32_t timeout) {
     this->config["Core"]["ConnectionTimeOut"] = timeout;
     this->setInUserConfig("Core", "ConnectionTimeOut", timeout);
 }
@@ -1372,8 +1379,8 @@ KeyValue ChargePointConfiguration::getConnectorPhaseRotationKeyValue() {
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getConnectorPhaseRotationMaxLength() {
-    std::optional<int32_t> max_length = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getConnectorPhaseRotationMaxLength() {
+    std::optional<std::int32_t> max_length = std::nullopt;
     if (this->config["Core"].contains("ConnectorPhaseRotationMaxLength")) {
         max_length.emplace(this->config["Core"]["ConnectorPhaseRotationMaxLength"]);
     }
@@ -1393,7 +1400,7 @@ std::optional<KeyValue> ChargePointConfiguration::getConnectorPhaseRotationMaxLe
 }
 
 // Core Profile
-int32_t ChargePointConfiguration::getGetConfigurationMaxKeys() {
+std::int32_t ChargePointConfiguration::getGetConfigurationMaxKeys() {
     return this->config["Core"]["GetConfigurationMaxKeys"];
 }
 KeyValue ChargePointConfiguration::getGetConfigurationMaxKeysKeyValue() {
@@ -1405,10 +1412,10 @@ KeyValue ChargePointConfiguration::getGetConfigurationMaxKeysKeyValue() {
 }
 
 // Core Profile
-int32_t ChargePointConfiguration::getHeartbeatInterval() {
+std::int32_t ChargePointConfiguration::getHeartbeatInterval() {
     return this->config["Core"]["HeartbeatInterval"];
 }
-void ChargePointConfiguration::setHeartbeatInterval(int32_t interval) {
+void ChargePointConfiguration::setHeartbeatInterval(std::int32_t interval) {
     this->config["Core"]["HeartbeatInterval"] = interval;
     this->setInUserConfig("Core", "HeartbeatInterval", interval);
 }
@@ -1421,14 +1428,14 @@ KeyValue ChargePointConfiguration::getHeartbeatIntervalKeyValue() {
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getLightIntensity() {
-    std::optional<int32_t> light_intensity = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getLightIntensity() {
+    std::optional<std::int32_t> light_intensity = std::nullopt;
     if (this->config["Core"].contains("LightIntensity")) {
         light_intensity.emplace(this->config["Core"]["LightIntensity"]);
     }
     return light_intensity;
 }
-void ChargePointConfiguration::setLightIntensity(int32_t light_intensity) {
+void ChargePointConfiguration::setLightIntensity(std::int32_t light_intensity) {
     if (this->getLightIntensity() != std::nullopt) {
         this->config["Core"]["LightIntensity"] = light_intensity;
         this->setInUserConfig("Core", "LightIntensity", light_intensity);
@@ -1480,14 +1487,14 @@ KeyValue ChargePointConfiguration::getLocalPreAuthorizeKeyValue() {
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getMaxEnergyOnInvalidId() {
-    std::optional<int32_t> max_energy = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getMaxEnergyOnInvalidId() {
+    std::optional<std::int32_t> max_energy = std::nullopt;
     if (this->config["Core"].contains("MaxEnergyOnInvalidId")) {
         max_energy.emplace(this->config["Core"]["MaxEnergyOnInvalidId"]);
     }
     return max_energy;
 }
-void ChargePointConfiguration::setMaxEnergyOnInvalidId(int32_t max_energy) {
+void ChargePointConfiguration::setMaxEnergyOnInvalidId(std::int32_t max_energy) {
     if (this->getMaxEnergyOnInvalidId() != std::nullopt) {
         this->config["Core"]["MaxEnergyOnInvalidId"] = max_energy;
         this->setInUserConfig("Core", "MaxEnergyOnInvalidId", max_energy);
@@ -1530,8 +1537,8 @@ std::vector<MeasurandWithPhase> ChargePointConfiguration::getMeterValuesAlignedD
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getMeterValuesAlignedDataMaxLength() {
-    std::optional<int32_t> max_length = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getMeterValuesAlignedDataMaxLength() {
+    std::optional<std::int32_t> max_length = std::nullopt;
     if (this->config["Core"].contains("MeterValuesAlignedDataMaxLength")) {
         max_length.emplace(this->config["Core"]["MeterValuesAlignedDataMaxLength"]);
     }
@@ -1574,8 +1581,8 @@ std::vector<MeasurandWithPhase> ChargePointConfiguration::getMeterValuesSampledD
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getMeterValuesSampledDataMaxLength() {
-    std::optional<int32_t> max_length = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getMeterValuesSampledDataMaxLength() {
+    std::optional<std::int32_t> max_length = std::nullopt;
     if (this->config["Core"].contains("MeterValuesSampledDataMaxLength")) {
         max_length.emplace(this->config["Core"]["MeterValuesSampledDataMaxLength"]);
     }
@@ -1595,10 +1602,10 @@ std::optional<KeyValue> ChargePointConfiguration::getMeterValuesSampledDataMaxLe
 }
 
 // Core Profile
-int32_t ChargePointConfiguration::getMeterValueSampleInterval() {
+std::int32_t ChargePointConfiguration::getMeterValueSampleInterval() {
     return this->config["Core"]["MeterValueSampleInterval"];
 }
-void ChargePointConfiguration::setMeterValueSampleInterval(int32_t interval) {
+void ChargePointConfiguration::setMeterValueSampleInterval(std::int32_t interval) {
     this->config["Core"]["MeterValueSampleInterval"] = interval;
     this->setInUserConfig("Core", "MeterValueSampleInterval", interval);
 }
@@ -1611,14 +1618,14 @@ KeyValue ChargePointConfiguration::getMeterValueSampleIntervalKeyValue() {
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getMinimumStatusDuration() {
-    std::optional<int32_t> minimum_status_duration = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getMinimumStatusDuration() {
+    std::optional<std::int32_t> minimum_status_duration = std::nullopt;
     if (this->config["Core"].contains("MinimumStatusDuration")) {
         minimum_status_duration.emplace(this->config["Core"]["MinimumStatusDuration"]);
     }
     return minimum_status_duration;
 }
-void ChargePointConfiguration::setMinimumStatusDuration(int32_t minimum_status_duration) {
+void ChargePointConfiguration::setMinimumStatusDuration(std::int32_t minimum_status_duration) {
     if (this->getMinimumStatusDuration() != std::nullopt) {
         this->config["Core"]["MinimumStatusDuration"] = minimum_status_duration;
         this->setInUserConfig("Core", "MinimumStatusDuration", minimum_status_duration);
@@ -1638,7 +1645,7 @@ std::optional<KeyValue> ChargePointConfiguration::getMinimumStatusDurationKeyVal
 }
 
 // Core Profile
-int32_t ChargePointConfiguration::getNumberOfConnectors() {
+std::int32_t ChargePointConfiguration::getNumberOfConnectors() {
     return this->config["Core"]["NumberOfConnectors"];
 }
 KeyValue ChargePointConfiguration::getNumberOfConnectorsKeyValue() {
@@ -1673,10 +1680,10 @@ std::optional<KeyValue> ChargePointConfiguration::getReserveConnectorZeroSupport
 }
 
 // Core Profile
-int32_t ChargePointConfiguration::getResetRetries() {
+std::int32_t ChargePointConfiguration::getResetRetries() {
     return this->config["Core"]["ResetRetries"];
 }
-void ChargePointConfiguration::setResetRetries(int32_t retries) {
+void ChargePointConfiguration::setResetRetries(std::int32_t retries) {
     this->config["Core"]["ResetRetries"] = retries;
     this->setInUserConfig("Core", "ResetRetries", retries);
 }
@@ -1746,8 +1753,8 @@ KeyValue ChargePointConfiguration::getStopTxnAlignedDataKeyValue() {
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getStopTxnAlignedDataMaxLength() {
-    std::optional<int32_t> max_length = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getStopTxnAlignedDataMaxLength() {
+    std::optional<std::int32_t> max_length = std::nullopt;
     if (this->config["Core"].contains("StopTxnAlignedDataMaxLength")) {
         max_length.emplace(this->config["Core"]["StopTxnAlignedDataMaxLength"]);
     }
@@ -1788,8 +1795,8 @@ KeyValue ChargePointConfiguration::getStopTxnSampledDataKeyValue() {
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getStopTxnSampledDataMaxLength() {
-    std::optional<int32_t> max_length = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getStopTxnSampledDataMaxLength() {
+    std::optional<std::int32_t> max_length = std::nullopt;
     if (this->config["Core"].contains("StopTxnSampledDataMaxLength")) {
         max_length.emplace(this->config["Core"]["StopTxnSampledDataMaxLength"]);
     }
@@ -1824,8 +1831,8 @@ std::set<SupportedFeatureProfiles> ChargePointConfiguration::getSupportedFeature
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getSupportedFeatureProfilesMaxLength() {
-    std::optional<int32_t> max_length = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getSupportedFeatureProfilesMaxLength() {
+    std::optional<std::int32_t> max_length = std::nullopt;
     if (this->config["Core"].contains("SupportedFeatureProfilesMaxLength")) {
         max_length.emplace(this->config["Core"]["SupportedFeatureProfilesMaxLength"]);
     }
@@ -1845,10 +1852,10 @@ std::optional<KeyValue> ChargePointConfiguration::getSupportedFeatureProfilesMax
 }
 
 // Core Profile
-int32_t ChargePointConfiguration::getTransactionMessageAttempts() {
+std::int32_t ChargePointConfiguration::getTransactionMessageAttempts() {
     return this->config["Core"]["TransactionMessageAttempts"];
 }
-void ChargePointConfiguration::setTransactionMessageAttempts(int32_t attempts) {
+void ChargePointConfiguration::setTransactionMessageAttempts(std::int32_t attempts) {
     this->config["Core"]["TransactionMessageAttempts"] = attempts;
     this->setInUserConfig("Core", "TransactionMessageAttempts", attempts);
 }
@@ -1861,10 +1868,10 @@ KeyValue ChargePointConfiguration::getTransactionMessageAttemptsKeyValue() {
 }
 
 // Core Profile
-int32_t ChargePointConfiguration::getTransactionMessageRetryInterval() {
+std::int32_t ChargePointConfiguration::getTransactionMessageRetryInterval() {
     return this->config["Core"]["TransactionMessageRetryInterval"];
 }
-void ChargePointConfiguration::setTransactionMessageRetryInterval(int32_t retry_interval) {
+void ChargePointConfiguration::setTransactionMessageRetryInterval(std::int32_t retry_interval) {
     this->config["Core"]["TransactionMessageRetryInterval"] = retry_interval;
     this->setInUserConfig("Core", "TransactionMessageRetryInterval", retry_interval);
 }
@@ -1893,14 +1900,14 @@ KeyValue ChargePointConfiguration::getUnlockConnectorOnEVSideDisconnectKeyValue(
 }
 
 // Core Profile - optional
-std::optional<int32_t> ChargePointConfiguration::getWebsocketPingInterval() {
-    std::optional<int32_t> websocket_ping_interval = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getWebsocketPingInterval() {
+    std::optional<std::int32_t> websocket_ping_interval = std::nullopt;
     if (this->config["Core"].contains("WebSocketPingInterval")) {
         websocket_ping_interval.emplace(this->config["Core"]["WebSocketPingInterval"]);
     }
     return websocket_ping_interval;
 }
-void ChargePointConfiguration::setWebsocketPingInterval(int32_t websocket_ping_interval) {
+void ChargePointConfiguration::setWebsocketPingInterval(std::int32_t websocket_ping_interval) {
     if (this->getWebsocketPingInterval() != std::nullopt) {
         this->config["Core"]["WebSocketPingInterval"] = websocket_ping_interval;
         this->setInUserConfig("Core", "WebSocketPingInterval", websocket_ping_interval);
@@ -1971,7 +1978,7 @@ std::optional<KeyValue> ChargePointConfiguration::getSupportedFileTransferProtoc
 
 // Firmware Managet Profile end
 
-int32_t ChargePointConfiguration::getChargeProfileMaxStackLevel() {
+std::int32_t ChargePointConfiguration::getChargeProfileMaxStackLevel() {
     return this->config["SmartCharging"]["ChargeProfileMaxStackLevel"];
 }
 KeyValue ChargePointConfiguration::getChargeProfileMaxStackLevelKeyValue() {
@@ -2007,7 +2014,7 @@ std::vector<ChargingRateUnit> ChargePointConfiguration::getChargingScheduleAllow
     return charging_rate_unit_vector;
 }
 
-int32_t ChargePointConfiguration::getChargingScheduleMaxPeriods() {
+std::int32_t ChargePointConfiguration::getChargingScheduleMaxPeriods() {
     return this->config["SmartCharging"]["ChargingScheduleMaxPeriods"];
 }
 KeyValue ChargePointConfiguration::getChargingScheduleMaxPeriodsKeyValue() {
@@ -2040,7 +2047,7 @@ std::optional<KeyValue> ChargePointConfiguration::getConnectorSwitch3to1PhaseSup
     return connector_switch_3_to_1_phase_supported_kv;
 }
 
-int32_t ChargePointConfiguration::getMaxChargingProfilesInstalled() {
+std::int32_t ChargePointConfiguration::getMaxChargingProfilesInstalled() {
     return this->config["SmartCharging"]["MaxChargingProfilesInstalled"];
 }
 KeyValue ChargePointConfiguration::getMaxChargingProfilesInstalledKeyValue() {
@@ -2083,24 +2090,25 @@ std::optional<std::string> ChargePointConfiguration::getAuthorizationKey() {
     return authorization_key;
 }
 
-std::string hexToString(std::string const& s) {
+namespace {
+std::string hexToString(const std::string& s) {
     std::string str;
     for (size_t i = 0; i < s.length(); i += 2) {
-        std::string byte = s.substr(i, 2);
-        char chr = (char)(int)strtol(byte.c_str(), NULL, 16);
+        const std::string byte = s.substr(i, 2);
+        const char chr = (char)(int)strtol(byte.c_str(), nullptr, 16);
         str.push_back(chr);
     }
     return str;
 }
 
-bool isHexNotation(std::string const& s) {
-    bool is_hex = s.size() > 2 and s.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string::npos;
+bool isHexNotation(const std::string& s) {
+    const bool is_hex = s.size() > 2 and s.find_first_not_of("0123456789abcdefABCDEF", 2) == std::string::npos;
 
     if (is_hex) {
         // check if every char is printable
         for (size_t i = 0; i < s.length(); i += 2) {
-            std::string byte = s.substr(i, 2);
-            char chr = (char)(int)strtol(byte.c_str(), NULL, 16);
+            const std::string byte = s.substr(i, 2);
+            const char chr = (char)(int)strtol(byte.c_str(), nullptr, 16);
             if ((chr < 0x20 or chr > 0x7e) and chr != 0xa) {
                 return false;
             }
@@ -2110,6 +2118,7 @@ bool isHexNotation(std::string const& s) {
     }
     return true;
 }
+} // namespace
 
 void ChargePointConfiguration::setAuthorizationKey(std::string authorization_key) {
 
@@ -2127,7 +2136,6 @@ void ChargePointConfiguration::setAuthorizationKey(std::string authorization_key
 }
 
 bool ChargePointConfiguration::isConnectorPhaseRotationValid(std::string str) {
-    std::stringstream ss(str);
     std::vector<std::string> elements;
 
     str.erase(std::remove_if(str.begin(), str.end(), isspace), str.end());
@@ -2135,13 +2143,13 @@ bool ChargePointConfiguration::isConnectorPhaseRotationValid(std::string str) {
 
     // Filter per element of type 0.NotApplicable, 1.NotApplicable, or 0.Unknown etc
     for (int connector_id = 0; connector_id <= this->getNumberOfConnectors(); connector_id++) {
-        std::string myNotApplicable = std::to_string(connector_id) + ".NotApplicable";
-        std::string myNotDefined = std::to_string(connector_id) + ".Unknown";
+        const std::string myNotApplicable = std::to_string(connector_id) + ".NotApplicable";
+        const std::string myNotDefined = std::to_string(connector_id) + ".Unknown";
         elements.erase(std::remove(elements.begin(), elements.end(), myNotApplicable), elements.end());
         elements.erase(std::remove(elements.begin(), elements.end(), myNotDefined), elements.end());
     }
     // if all elemens are hit, accept it, else check the remaining
-    if (elements.size() == 0) {
+    if (elements.empty()) {
         return true;
     }
 
@@ -2157,7 +2165,7 @@ bool ChargePointConfiguration::isConnectorPhaseRotationValid(std::string str) {
         } catch (const std::invalid_argument&) {
             return false;
         }
-        std::string phase_rotation = e.substr(2, 5);
+        const std::string phase_rotation = e.substr(2, 5);
         if (phase_rotation != "RST" and phase_rotation != "RTS" and phase_rotation != "SRT" and
             phase_rotation != "STR" and phase_rotation != "TRS" and phase_rotation != "TSR") {
             return false;
@@ -2166,39 +2174,40 @@ bool ChargePointConfiguration::isConnectorPhaseRotationValid(std::string str) {
     return true;
 }
 
-bool ChargePointConfiguration::checkTimeOffset(const std::string& offset) {
+namespace {
+bool checkTimeOffset(const std::string& offset) {
     const std::vector<std::string> times = split_string(offset, ':');
     if (times.size() != 2) {
         EVLOG_error << "Could not set display time offset: format not correct (should be something like "
                        "\"-05:00\", but is "
                     << offset << ")";
         return false;
-    } else {
-        try {
-            // Check if strings are numbers.
-            const int32_t hours = std::stoi(times.at(0));
-            const int32_t minutes = std::stoi(times.at(1));
+    }
+    try {
+        // Check if strings are numbers.
+        const std::int32_t hours = std::stoi(times.at(0));
+        const std::int32_t minutes = std::stoi(times.at(1));
 
-            // And check if numbers are valid.
-            if (hours < -24 or hours > 24) {
-                EVLOG_error << "Could not set display time offset: hours should be between -24 and +24, but is "
-                            << times.at(0);
-                return false;
-            }
-
-            if (minutes < 0 or minutes > 59) {
-                EVLOG_error << "Could not set display time offset: minutes should be between 0 and 59, but is "
-                            << times.at(1);
-                return false;
-            }
-
-        } catch (const std::exception& e) {
-            EVLOG_error << "Could not set display time offset: format not correct (should be something "
-                           "like \"-19:15\", but is "
-                        << offset << "): " << e.what();
+        // And check if numbers are valid.
+        if (hours < -24 or hours > 24) {
+            EVLOG_error << "Could not set display time offset: hours should be between -24 and +24, but is "
+                        << times.at(0);
             return false;
         }
+
+        if (minutes < 0 or minutes > 59) {
+            EVLOG_error << "Could not set display time offset: minutes should be between 0 and 59, but is "
+                        << times.at(1);
+            return false;
+        }
+
+    } catch (const std::exception& e) {
+        EVLOG_error << "Could not set display time offset: format not correct (should be something "
+                       "like \"-19:15\", but is "
+                    << offset << "): " << e.what();
+        return false;
     }
+
     return true;
 }
 
@@ -2207,6 +2216,7 @@ bool isBool(const std::string& str) {
     std::transform(out.begin(), out.end(), out.begin(), ::tolower);
     return out == "true" || out == "false";
 }
+} // namespace
 
 std::optional<KeyValue> ChargePointConfiguration::getAuthorizationKeyKeyValue() {
     std::optional<KeyValue> enabled_kv = std::nullopt;
@@ -2226,8 +2236,8 @@ std::optional<KeyValue> ChargePointConfiguration::getAuthorizationKeyKeyValue() 
 }
 
 // Security profile - optional
-std::optional<int32_t> ChargePointConfiguration::getCertificateSignedMaxChainSize() {
-    std::optional<int32_t> certificate_max_chain_size = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getCertificateSignedMaxChainSize() {
+    std::optional<std::int32_t> certificate_max_chain_size = std::nullopt;
     if (this->config["Security"].contains("CertificateSignedMaxChainSize")) {
         certificate_max_chain_size.emplace(this->config["Security"]["CertificateSignedMaxChainSize"]);
     }
@@ -2248,8 +2258,8 @@ std::optional<KeyValue> ChargePointConfiguration::getCertificateSignedMaxChainSi
 }
 
 // Security profile - optional
-std::optional<int32_t> ChargePointConfiguration::getCertificateStoreMaxLength() {
-    std::optional<int32_t> certificate_store_max_length = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getCertificateStoreMaxLength() {
+    std::optional<std::int32_t> certificate_store_max_length = std::nullopt;
     if (this->config["Security"].contains("CertificateStoreMaxLength")) {
         certificate_store_max_length.emplace(this->config["Security"]["CertificateStoreMaxLength"]);
     }
@@ -2278,9 +2288,9 @@ std::optional<std::string> ChargePointConfiguration::getCpoName() {
     return cpo_name;
 }
 
-void ChargePointConfiguration::setCpoName(std::string cpoName) {
-    this->config["Security"]["CpoName"] = cpoName;
-    this->setInUserConfig("Security", "CpoName", cpoName);
+void ChargePointConfiguration::setCpoName(std::string cpo_name) {
+    this->config["Security"]["CpoName"] = cpo_name;
+    this->setInUserConfig("Security", "CpoName", cpo_name);
 }
 
 std::optional<KeyValue> ChargePointConfiguration::getCpoNameKeyValue() {
@@ -2297,11 +2307,11 @@ std::optional<KeyValue> ChargePointConfiguration::getCpoNameKeyValue() {
 }
 
 // Security profile - optional in ocpp but mandatory websocket connection
-int32_t ChargePointConfiguration::getSecurityProfile() {
+std::int32_t ChargePointConfiguration::getSecurityProfile() {
     return this->config["Security"]["SecurityProfile"];
 }
 
-void ChargePointConfiguration::setSecurityProfile(int32_t security_profile) {
+void ChargePointConfiguration::setSecurityProfile(std::int32_t security_profile) {
     // TODO(piet): add boundaries for value of security profile
     this->config["Security"]["SecurityProfile"] = security_profile;
     // set security profile in user config
@@ -2338,9 +2348,8 @@ KeyValue ChargePointConfiguration::getDisableSecurityEventNotificationsKeyValue(
 bool ChargePointConfiguration::getLocalAuthListEnabled() {
     if (this->config.contains("LocalAuthListManagement")) {
         return this->config["LocalAuthListManagement"]["LocalAuthListEnabled"];
-    } else {
-        return false;
     }
+    return false;
 }
 
 void ChargePointConfiguration::setLocalAuthListEnabled(bool local_auth_list_enabled) {
@@ -2356,7 +2365,7 @@ KeyValue ChargePointConfiguration::getLocalAuthListEnabledKeyValue() {
 }
 
 // Local Auth List Management Profile
-int32_t ChargePointConfiguration::getLocalAuthListMaxLength() {
+std::int32_t ChargePointConfiguration::getLocalAuthListMaxLength() {
     return this->config["LocalAuthListManagement"]["LocalAuthListMaxLength"];
 }
 KeyValue ChargePointConfiguration::getLocalAuthListMaxLengthKeyValue() {
@@ -2368,7 +2377,7 @@ KeyValue ChargePointConfiguration::getLocalAuthListMaxLengthKeyValue() {
 }
 
 // Local Auth List Management Profile
-int32_t ChargePointConfiguration::getSendLocalListMaxLength() {
+std::int32_t ChargePointConfiguration::getSendLocalListMaxLength() {
     return this->config["LocalAuthListManagement"]["SendLocalListMaxLength"];
 }
 KeyValue ChargePointConfiguration::getSendLocalListMaxLengthKeyValue() {
@@ -2442,15 +2451,15 @@ std::optional<KeyValue> ChargePointConfiguration::getCentralContractValidationAl
     return central_contract_validation_allowed_kv;
 }
 
-std::optional<int32_t> ChargePointConfiguration::getCertSigningWaitMinimum() {
-    std::optional<int32_t> cert_signing_wait_minimum = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getCertSigningWaitMinimum() {
+    std::optional<std::int32_t> cert_signing_wait_minimum = std::nullopt;
     if (this->config["PnC"].contains("CertSigningWaitMinimum")) {
         cert_signing_wait_minimum.emplace(this->config["PnC"]["CertSigningWaitMinimum"]);
     }
     return cert_signing_wait_minimum;
 }
 
-void ChargePointConfiguration::setCertSigningWaitMinimum(const int32_t cert_signing_wait_minimum) {
+void ChargePointConfiguration::setCertSigningWaitMinimum(const std::int32_t cert_signing_wait_minimum) {
     if (this->getCertSigningWaitMinimum() != std::nullopt) {
         this->config["PnC"]["CertSigningWaitMinimum"] = cert_signing_wait_minimum;
         this->setInUserConfig("PnC", "CertSigningWaitMinimum", cert_signing_wait_minimum);
@@ -2470,14 +2479,14 @@ std::optional<KeyValue> ChargePointConfiguration::getCertSigningWaitMinimumKeyVa
     return cert_signing_wait_minimum_kv;
 }
 
-std::optional<int32_t> ChargePointConfiguration::getCertSigningRepeatTimes() {
-    std::optional<int32_t> get_cert_signing_repeat_times = std::nullopt;
+std::optional<std::int32_t> ChargePointConfiguration::getCertSigningRepeatTimes() {
+    std::optional<std::int32_t> get_cert_signing_repeat_times = std::nullopt;
     if (this->config["PnC"].contains("CertSigningRepeatTimes")) {
         get_cert_signing_repeat_times.emplace(this->config["PnC"]["CertSigningRepeatTimes"]);
     }
     return get_cert_signing_repeat_times;
 }
-void ChargePointConfiguration::setCertSigningRepeatTimes(const int32_t cert_signing_repeat_times) {
+void ChargePointConfiguration::setCertSigningRepeatTimes(const std::int32_t cert_signing_repeat_times) {
     if (this->getCertSigningRepeatTimes() != std::nullopt) {
         this->config["PnC"]["CertSigningRepeatTimes"] = cert_signing_repeat_times;
         this->setInUserConfig("PnC", "CertSigningRepeatTimes", cert_signing_repeat_times);
@@ -2514,11 +2523,11 @@ KeyValue ChargePointConfiguration::getContractValidationOfflineKeyValue() {
     return kv;
 }
 
-int32_t ChargePointConfiguration::getOcspRequestInterval() {
+std::int32_t ChargePointConfiguration::getOcspRequestInterval() {
     return this->config["Internal"]["OcspRequestInterval"];
 }
 
-void ChargePointConfiguration::setOcspRequestInterval(const int32_t ocsp_request_interval) {
+void ChargePointConfiguration::setOcspRequestInterval(const std::int32_t ocsp_request_interval) {
     this->config["Internal"]["OcspRequestInterval"] = ocsp_request_interval;
     this->setInUserConfig("Internal", "OcspRequestInterval", ocsp_request_interval);
 }
@@ -2665,18 +2674,18 @@ std::optional<KeyValue> ChargePointConfiguration::getAllowChargingProfileWithout
         KeyValue kv;
         kv.key = "AllowChargingProfileWithoutStartSchedule";
         kv.readonly = false;
-        kv.value.emplace(std::to_string(allow.value()));
+        kv.value.emplace(ocpp::conversions::bool_to_string(allow.value()));
         allow_opt.emplace(kv);
     }
     return allow_opt;
 }
 
-int32_t ChargePointConfiguration::getWaitForStopTransactionsOnResetTimeout() {
+std::int32_t ChargePointConfiguration::getWaitForStopTransactionsOnResetTimeout() {
     return this->config["Internal"]["WaitForStopTransactionsOnResetTimeout"];
 }
 
 void ChargePointConfiguration::setWaitForStopTransactionsOnResetTimeout(
-    const int32_t wait_for_stop_transactions_on_reset_timeout) {
+    const std::int32_t wait_for_stop_transactions_on_reset_timeout) {
     this->config["Internal"]["WaitForStopTransactionsOnResetTimeout"] = wait_for_stop_transactions_on_reset_timeout;
     this->setInUserConfig("Internal", "WaitForStopTransactionsOnResetTimeout",
                           wait_for_stop_transactions_on_reset_timeout);
@@ -2709,7 +2718,7 @@ KeyValue ChargePointConfiguration::getCustomDisplayCostAndPriceEnabledKeyValue()
     return kv;
 }
 
-std::optional<uint32_t> ChargePointConfiguration::getPriceNumberOfDecimalsForCostValues() {
+std::optional<std::uint32_t> ChargePointConfiguration::getPriceNumberOfDecimalsForCostValues() {
     if (this->config.contains("CostAndPrice") and
         this->config.at("CostAndPrice").contains("NumberOfDecimalsForCostValues")) {
         return this->config["CostAndPrice"]["NumberOfDecimalsForCostValues"];
@@ -2720,7 +2729,7 @@ std::optional<uint32_t> ChargePointConfiguration::getPriceNumberOfDecimalsForCos
 
 std::optional<KeyValue> ChargePointConfiguration::getPriceNumberOfDecimalsForCostValuesKeyValue() {
     std::optional<KeyValue> kv_opt = std::nullopt;
-    const std::optional<uint32_t> number_of_decimals = getPriceNumberOfDecimalsForCostValues();
+    const std::optional<std::uint32_t> number_of_decimals = getPriceNumberOfDecimalsForCostValues();
     if (number_of_decimals.has_value()) {
         kv_opt = KeyValue();
         kv_opt->key = "NumberOfDecimalsForCostValues";
@@ -2842,7 +2851,7 @@ ConfigurationStatus ChargePointConfiguration::setDefaultPriceText(const CiString
 
     json default_price = json::object();
     if (this->config.contains("CostAndPrice") and this->config.at("CostAndPrice").contains("DefaultPriceText")) {
-        json result = json::object();
+        const json result = json::object();
         default_price = this->config["CostAndPrice"]["DefaultPriceText"];
     }
 
@@ -3013,7 +3022,7 @@ std::optional<std::string> ChargePointConfiguration::getNextTimeOffsetTransition
 }
 
 ConfigurationStatus ChargePointConfiguration::setNextTimeOffsetTransitionDateTime(const std::string& date_time) {
-    DateTime d(date_time);
+    const DateTime d(date_time);
     if (d.to_time_point() > date::utc_clock::now()) {
         this->config["CostAndPrice"]["NextTimeOffsetTransitionDateTime"] = date_time;
         this->setInUserConfig("CostAndPrice", "NextTimeOffsetTransitionDateTime", date_time);
@@ -3144,7 +3153,7 @@ std::optional<std::string> ChargePointConfiguration::getLanguage() {
     return std::nullopt;
 }
 
-std::optional<int32_t> ChargePointConfiguration::getWaitForSetUserPriceTimeout() {
+std::optional<std::int32_t> ChargePointConfiguration::getWaitForSetUserPriceTimeout() {
     if (this->config.contains("CostAndPrice") and this->config["CostAndPrice"].contains("WaitForSetUserPriceTimeout")) {
         return this->config["CostAndPrice"]["WaitForSetUserPriceTimeout"];
     }
@@ -3152,7 +3161,7 @@ std::optional<int32_t> ChargePointConfiguration::getWaitForSetUserPriceTimeout()
     return std::nullopt;
 }
 
-void ChargePointConfiguration::setWaitForSetUserPriceTimeout(const int32_t wait_for_set_user_price_timeout) {
+void ChargePointConfiguration::setWaitForSetUserPriceTimeout(const std::int32_t wait_for_set_user_price_timeout) {
     if (this->getWaitForSetUserPriceTimeout() != std::nullopt) {
         this->config["CostAndPrice"]["WaitForSetUserPriceTimeout"] = wait_for_set_user_price_timeout;
         this->setInUserConfig("CostAndPrice", "WaitForSetUserPriceTimeout", wait_for_set_user_price_timeout);
@@ -3192,7 +3201,7 @@ std::optional<KeyValue> ChargePointConfiguration::getLanguageKeyValue() {
 
 // Custom
 std::optional<KeyValue> ChargePointConfiguration::getCustomKeyValue(CiString<50> key) {
-    std::lock_guard<std::recursive_mutex> lock(this->configuration_mutex);
+    const std::lock_guard<std::recursive_mutex> lock(this->configuration_mutex);
     if (!this->config["Custom"].contains(key.get())) {
         return std::nullopt;
     }
@@ -3217,7 +3226,7 @@ ConfigurationStatus ChargePointConfiguration::setCustomKey(CiString<50> key, CiS
     if (!kv.has_value() or (kv.value().readonly and !force)) {
         return ConfigurationStatus::Rejected;
     }
-    std::lock_guard<std::recursive_mutex> lock(this->configuration_mutex);
+    const std::lock_guard<std::recursive_mutex> lock(this->configuration_mutex);
     try {
         const auto type = custom_schema["properties"][key]["type"];
         json new_value;
@@ -3248,14 +3257,14 @@ ConfigurationStatus ChargePointConfiguration::setCustomKey(CiString<50> key, CiS
     return ConfigurationStatus::Accepted;
 }
 
-void ChargePointConfiguration::setCentralSystemURI(std::string centralSystemUri) {
-    EVLOG_warning << "CentralSystemURI changed to: " << centralSystemUri;
-    this->config["Internal"]["CentralSystemURI"] = centralSystemUri;
-    this->setInUserConfig("Internal", "CentralSystemURI", centralSystemUri);
+void ChargePointConfiguration::setCentralSystemURI(std::string ocpp_uri) {
+    EVLOG_warning << "CentralSystemURI changed to: " << ocpp_uri;
+    this->config["Internal"]["CentralSystemURI"] = ocpp_uri;
+    this->setInUserConfig("Internal", "CentralSystemURI", ocpp_uri);
 }
 
 std::optional<KeyValue> ChargePointConfiguration::get(CiString<50> key) {
-    std::lock_guard<std::recursive_mutex> lock(this->configuration_mutex);
+    const std::lock_guard<std::recursive_mutex> lock(this->configuration_mutex);
     // Internal Profile
     if (key == "ChargePointId") {
         return this->getChargePointIdKeyValue();
@@ -3504,14 +3513,14 @@ std::optional<KeyValue> ChargePointConfiguration::get(CiString<50> key) {
     }
 
     // Firmware Management
-    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::FirmwareManagement)) {
+    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::FirmwareManagement) != 0) {
         if (key == "SupportedFileTransferProtocols") {
             return this->getSupportedFileTransferProtocolsKeyValue();
         }
     }
 
     // PnC
-    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::PnC)) {
+    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::PnC) != 0) {
         if (key == "ISO15118CertificateManagementEnabled") {
             return this->getISO15118CertificateManagementEnabledKeyValue();
         }
@@ -3533,7 +3542,7 @@ std::optional<KeyValue> ChargePointConfiguration::get(CiString<50> key) {
     }
 
     // Smart Charging
-    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::SmartCharging)) {
+    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::SmartCharging) != 0) {
         if (key == "ChargeProfileMaxStackLevel") {
             return this->getChargeProfileMaxStackLevelKeyValue();
         }
@@ -3552,7 +3561,7 @@ std::optional<KeyValue> ChargePointConfiguration::get(CiString<50> key) {
     }
 
     // Security (always added as supported feature profile)
-    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::Security)) {
+    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::Security) != 0) {
         if (key == "AdditionalRootCertificateCheck") {
             return this->getAdditionalRootCertificateCheckKeyValue();
         }
@@ -3578,7 +3587,7 @@ std::optional<KeyValue> ChargePointConfiguration::get(CiString<50> key) {
     }
 
     // Local Auth List Managementg
-    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::LocalAuthListManagement)) {
+    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::LocalAuthListManagement) != 0) {
         if (key == "LocalAuthListEnabled") {
             return this->getLocalAuthListEnabledKeyValue();
         }
@@ -3590,7 +3599,7 @@ std::optional<KeyValue> ChargePointConfiguration::get(CiString<50> key) {
         }
     }
 
-    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::CostAndPrice)) {
+    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::CostAndPrice) != 0) {
         // California Pricing
         if (key == "CustomDisplayCostAndPrice") {
             return this->getCustomDisplayCostAndPriceEnabledKeyValue();
@@ -3602,8 +3611,7 @@ std::optional<KeyValue> ChargePointConfiguration::get(CiString<50> key) {
         if (key == "DefaultPrice") {
             return this->getDefaultPriceKeyValue();
         }
-        if (key.get().find("DefaultPriceText") == 0 and this->getCustomMultiLanguageMessagesEnabled().has_value() and
-            this->getCustomMultiLanguageMessagesEnabled().value()) {
+        if (key.get().find("DefaultPriceText") == 0 and this->getCustomMultiLanguageMessagesEnabled().value_or(false)) {
             const std::vector<std::string> message_language = split_string(key, ',');
             if (message_language.size() > 1) {
                 return this->getDefaultPriceTextKeyValue(message_language.at(1));
@@ -3635,7 +3643,7 @@ std::optional<KeyValue> ChargePointConfiguration::get(CiString<50> key) {
         }
     }
 
-    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::Custom)) {
+    if (this->supported_feature_profiles.count(SupportedFeatureProfiles::Custom) != 0) {
         return this->getCustomKeyValue(key);
     }
 
@@ -3672,7 +3680,7 @@ std::vector<KeyValue> ChargePointConfiguration::get_all_key_value() {
 }
 
 std::optional<ConfigurationStatus> ChargePointConfiguration::set(CiString<50> key, CiString<500> value) {
-    std::lock_guard<std::recursive_mutex> lock(this->configuration_mutex);
+    const std::lock_guard<std::recursive_mutex> lock(this->configuration_mutex);
     if (key == "IgnoredProfilePurposesOffline") {
         if (this->setIgnoredProfilePurposesOffline(value) == false) {
             return ConfigurationStatus::Rejected;
@@ -3696,14 +3704,13 @@ std::optional<ConfigurationStatus> ChargePointConfiguration::set(CiString<50> ke
             return ConfigurationStatus::Rejected;
         }
     } else if (key == "AuthorizationKey") {
-        std::string authorization_key = value.get();
+        const std::string authorization_key = value.get();
         if (authorization_key.length() >= AUTHORIZATION_KEY_MIN_LENGTH) {
             this->setAuthorizationKey(value.get());
             return ConfigurationStatus::Accepted;
-        } else {
-            EVLOG_warning << "Attempt to change AuthorizationKey to value with < 8 characters";
-            return ConfigurationStatus::Rejected;
         }
+        EVLOG_warning << "Attempt to change AuthorizationKey to value with < 8 characters";
+        return ConfigurationStatus::Rejected;
     } else if (key == "AuthorizeRemoteTxRequests") {
         this->setAuthorizeRemoteTxRequests(ocpp::conversions::string_to_bool(value.get()));
     } else if (key == "BlinkRepeat") {
@@ -3754,40 +3761,37 @@ std::optional<ConfigurationStatus> ChargePointConfiguration::set(CiString<50> ke
     } else if (key == "CentralContractValidationAllowed") {
         if (this->getCentralContractValidationAllowed() == std::nullopt) {
             return ConfigurationStatus::NotSupported;
-        } else {
-            this->setCentralContractValidationAllowed(ocpp::conversions::string_to_bool(value.get()));
         }
+        this->setCentralContractValidationAllowed(ocpp::conversions::string_to_bool(value.get()));
     } else if (key == "CertSigningWaitMinimum") {
         if (this->getCertSigningWaitMinimum() == std::nullopt) {
             return ConfigurationStatus::NotSupported;
-        } else {
-            try {
-                auto [valid, cert_signing_wait_minimum] = is_positive_integer(value.get());
-                if (!valid) {
-                    return ConfigurationStatus::Rejected;
-                }
-                this->setCertSigningWaitMinimum(cert_signing_wait_minimum);
-            } catch (const std::invalid_argument& e) {
-                return ConfigurationStatus::Rejected;
-            } catch (const std::out_of_range& e) {
+        }
+        try {
+            auto [valid, cert_signing_wait_minimum] = is_positive_integer(value.get());
+            if (!valid) {
                 return ConfigurationStatus::Rejected;
             }
+            this->setCertSigningWaitMinimum(cert_signing_wait_minimum);
+        } catch (const std::invalid_argument& e) {
+            return ConfigurationStatus::Rejected;
+        } catch (const std::out_of_range& e) {
+            return ConfigurationStatus::Rejected;
         }
     } else if (key == "CertSigningRepeatTimes") {
         if (this->getCertSigningRepeatTimes() == std::nullopt) {
             return ConfigurationStatus::NotSupported;
-        } else {
-            try {
-                auto [valid, cert_signing_repeat_times] = is_positive_integer(value.get());
-                if (!valid) {
-                    return ConfigurationStatus::Rejected;
-                }
-                this->setCertSigningRepeatTimes(cert_signing_repeat_times);
-            } catch (const std::invalid_argument& e) {
-                return ConfigurationStatus::Rejected;
-            } catch (const std::out_of_range& e) {
+        }
+        try {
+            auto [valid, cert_signing_repeat_times] = is_positive_integer(value.get());
+            if (!valid) {
                 return ConfigurationStatus::Rejected;
             }
+            this->setCertSigningRepeatTimes(cert_signing_repeat_times);
+        } catch (const std::invalid_argument& e) {
+            return ConfigurationStatus::Rejected;
+        } catch (const std::out_of_range& e) {
+            return ConfigurationStatus::Rejected;
         }
     } else if (key == "ContractValidationOffline") {
         this->setContractValidationOffline(ocpp::conversions::string_to_bool(value.get()));
@@ -3991,7 +3995,7 @@ std::optional<ConfigurationStatus> ChargePointConfiguration::set(CiString<50> ke
         }
     } else if (key == "LocalAuthListEnabled") {
         // Local Auth List Management
-        if (this->supported_feature_profiles.count(SupportedFeatureProfiles::LocalAuthListManagement)) {
+        if (this->supported_feature_profiles.count(SupportedFeatureProfiles::LocalAuthListManagement) != 0) {
             if (isBool(value.get())) {
                 this->setLocalAuthListEnabled(ocpp::conversions::string_to_bool(value.get()));
             } else {

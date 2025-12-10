@@ -17,7 +17,7 @@ namespace v2 {
 
 /// \brief Contains a OCPP SetMonitoringLevel message
 struct SetMonitoringLevelRequest : public ocpp::Message {
-    int32_t severity;
+    std::int32_t severity;
     std::optional<CustomData> customData;
 
     /// \brief Provides the type of this SetMonitoringLevel message as a human readable string
@@ -53,7 +53,8 @@ void to_json(json& j, const SetMonitoringLevelResponse& k);
 void from_json(const json& j, SetMonitoringLevelResponse& k);
 
 /// \brief Writes the string representation of the given SetMonitoringLevelResponse \p k to the given output stream \p
-/// os \returns an output stream with the SetMonitoringLevelResponse written to
+/// os
+/// \returns an output stream with the SetMonitoringLevelResponse written to
 std::ostream& operator<<(std::ostream& os, const SetMonitoringLevelResponse& k);
 
 } // namespace v2

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2020 - 2024 Pionix GmbH and Contributors to EVerest
+// Copyright 2020 - 2025 Pionix GmbH and Contributors to EVerest
 // This code is generated using the generator in 'src/code_generator/common`, please do not edit manually
 
 #ifndef OCPP_V16_STOPTRANSACTION_HPP
@@ -17,9 +17,9 @@ namespace v16 {
 
 /// \brief Contains a OCPP StopTransaction message
 struct StopTransactionRequest : public ocpp::Message {
-    int32_t meterStop;
+    std::int32_t meterStop;
     ocpp::DateTime timestamp;
-    int32_t transactionId;
+    std::int32_t transactionId;
     std::optional<CiString<20>> idTag;
     std::optional<Reason> reason;
     std::optional<std::vector<TransactionData>> transactionData;

@@ -32,7 +32,7 @@ struct VariableMonitoringPeriodic {
 /// \brief Helper struct that combines VariableCharacteristics and VariableMonitoring
 struct VariableMetaData {
     VariableCharacteristics characteristics;
-    std::unordered_map<int64_t, VariableMonitoringMeta> monitors;
+    std::unordered_map<std::int64_t, VariableMonitoringMeta> monitors;
     std::optional<std::string> source;
 };
 
@@ -44,11 +44,9 @@ public:
     [[nodiscard]] const char* what() const noexcept override {
         return this->reason.c_str();
     }
-    explicit DeviceModelError(std::string msg) {
-        this->reason = std::move(msg);
+    explicit DeviceModelError(std::string msg) : reason(std::move(msg)) {
     }
-    explicit DeviceModelError(const char* msg) {
-        this->reason = std::string(msg);
+    explicit DeviceModelError(const char* msg) : reason(std::string(msg)) {
     }
 
 private:
@@ -111,7 +109,7 @@ public:
     /// \param monitor_id Id of the monitor that requires the reference changed
     /// \param reference_value Value to replace the reference with
     /// \return true if the reference value could be updated, false otherwise
-    virtual bool update_monitoring_reference(const int32_t monitor_id, const std::string& reference_value) = 0;
+    virtual bool update_monitoring_reference(const std::int32_t monitor_id, const std::string& reference_value) = 0;
 
     /// \brief Returns all the monitors currently in the database based
     /// on the provided filtering criteria
@@ -133,7 +131,7 @@ public:
     /// \brief Clears all custom monitors (that were added by the CSMS)
     /// from the database
     /// \return count of monitors deleted, or 0 if none were deleted
-    virtual int32_t clear_custom_variable_monitors() = 0;
+    virtual std::int32_t clear_custom_variable_monitors() = 0;
 
     /// \brief Check data integrity of the stored data:
     /// For "required" variables, assert values exist. Checks might be extended in the future.

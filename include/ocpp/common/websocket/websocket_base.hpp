@@ -71,7 +71,8 @@ protected:
     std::optional<std::string> getAuthorizationHeader();
 
     /// \brief Logs websocket connection error
-    void log_on_fail(const std::error_code& ec, const boost::system::error_code& transport_ec, const int http_status);
+    static void log_on_fail(const std::error_code& ec, const boost::system::error_code& transport_ec,
+                            const int http_status);
 
     /// \brief Calculates and returns the reconnect interval based on int retry_backoff_random_range_s,
     /// retry_backoff_repeat_times, int retry_backoff_wait_minimum_s of the WebsocketConnectionOptions
@@ -135,7 +136,7 @@ public:
 
     /// \brief starts a timer that sends a websocket ping at the given \p ping_interval_s and
     /// waits for a pong response in \p pong_timeout_s
-    void set_websocket_ping_interval(int32_t ping_interval_s, int32_t pong_timeout_s);
+    void set_websocket_ping_interval(std::int32_t ping_interval_s, std::int32_t pong_timeout_s);
 
     /// \brief set the \p authorization_key of the connection_options
     void set_authorization_key(const std::string& authorization_key);

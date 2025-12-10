@@ -19,9 +19,6 @@ Websocket::Websocket(const WebsocketConnectionOptions& connection_options, std::
     this->websocket = std::make_unique<WebsocketLibwebsockets>(connection_options, evse_security);
 }
 
-Websocket::~Websocket() {
-}
-
 bool Websocket::start_connecting() {
     this->logging->sys("Connecting");
     return this->websocket->start_connecting();
@@ -86,7 +83,7 @@ bool Websocket::send(const std::string& message) {
     return this->websocket->send(message);
 }
 
-void Websocket::set_websocket_ping_interval(int32_t ping_interval_s, int32_t pong_interval_s) {
+void Websocket::set_websocket_ping_interval(std::int32_t ping_interval_s, std::int32_t pong_interval_s) {
     this->logging->sys("WebSocketPingInterval changed");
     this->websocket->set_websocket_ping_interval(ping_interval_s, pong_interval_s);
 }

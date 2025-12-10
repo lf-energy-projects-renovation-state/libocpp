@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2020 - 2024 Pionix GmbH and Contributors to EVerest
+// Copyright 2020 - 2025 Pionix GmbH and Contributors to EVerest
 // This code is generated using the generator in 'src/code_generator/common`, please do not edit manually
 
 #ifndef OCPP_V16_SIGNEDFIRMWARESTATUSNOTIFICATION_HPP
@@ -17,7 +17,7 @@ namespace v16 {
 /// \brief Contains a OCPP SignedFirmwareStatusNotification message
 struct SignedFirmwareStatusNotificationRequest : public ocpp::Message {
     FirmwareStatusEnumType status;
-    std::optional<int32_t> requestId;
+    std::optional<std::int32_t> requestId;
 
     /// \brief Provides the type of this SignedFirmwareStatusNotification message as a human readable string
     /// \returns the message type as a human readable string
@@ -31,7 +31,8 @@ void to_json(json& j, const SignedFirmwareStatusNotificationRequest& k);
 void from_json(const json& j, SignedFirmwareStatusNotificationRequest& k);
 
 /// \brief Writes the string representation of the given SignedFirmwareStatusNotificationRequest \p k to the given
-/// output stream \p os \returns an output stream with the SignedFirmwareStatusNotificationRequest written to
+/// output stream \p os
+/// \returns an output stream with the SignedFirmwareStatusNotificationRequest written to
 std::ostream& operator<<(std::ostream& os, const SignedFirmwareStatusNotificationRequest& k);
 
 /// \brief Contains a OCPP SignedFirmwareStatusNotificationResponse message
@@ -49,7 +50,8 @@ void to_json(json& j, const SignedFirmwareStatusNotificationResponse& k);
 void from_json(const json& j, SignedFirmwareStatusNotificationResponse& k);
 
 /// \brief Writes the string representation of the given SignedFirmwareStatusNotificationResponse \p k to the given
-/// output stream \p os \returns an output stream with the SignedFirmwareStatusNotificationResponse written to
+/// output stream \p os
+/// \returns an output stream with the SignedFirmwareStatusNotificationResponse written to
 std::ostream& operator<<(std::ostream& os, const SignedFirmwareStatusNotificationResponse& k);
 
 } // namespace v16

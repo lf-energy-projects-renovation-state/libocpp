@@ -17,10 +17,10 @@ namespace v2 {
 
 /// \brief Contains a OCPP ReportChargingProfiles message
 struct ReportChargingProfilesRequest : public ocpp::Message {
-    int32_t requestId;
+    std::int32_t requestId;
     CiString<20> chargingLimitSource;
     std::vector<ChargingProfile> chargingProfile;
-    int32_t evseId;
+    std::int32_t evseId;
     std::optional<bool> tbc;
     std::optional<CustomData> customData;
 
@@ -36,7 +36,8 @@ void to_json(json& j, const ReportChargingProfilesRequest& k);
 void from_json(const json& j, ReportChargingProfilesRequest& k);
 
 /// \brief Writes the string representation of the given ReportChargingProfilesRequest \p k to the given output stream
-/// \p os \returns an output stream with the ReportChargingProfilesRequest written to
+/// \p os
+/// \returns an output stream with the ReportChargingProfilesRequest written to
 std::ostream& operator<<(std::ostream& os, const ReportChargingProfilesRequest& k);
 
 /// \brief Contains a OCPP ReportChargingProfilesResponse message
@@ -55,7 +56,8 @@ void to_json(json& j, const ReportChargingProfilesResponse& k);
 void from_json(const json& j, ReportChargingProfilesResponse& k);
 
 /// \brief Writes the string representation of the given ReportChargingProfilesResponse \p k to the given output stream
-/// \p os \returns an output stream with the ReportChargingProfilesResponse written to
+/// \p os
+/// \returns an output stream with the ReportChargingProfilesResponse written to
 std::ostream& operator<<(std::ostream& os, const ReportChargingProfilesResponse& k);
 
 } // namespace v2

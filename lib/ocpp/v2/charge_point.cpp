@@ -47,7 +47,7 @@ namespace v2 {
 
 const auto DEFAULT_MESSAGE_QUEUE_SIZE_THRESHOLD = 2E5;
 
-ChargePoint::ChargePoint(const std::map<int32_t, int32_t>& evse_connector_structure,
+ChargePoint::ChargePoint(const std::map<std::int32_t, std::int32_t>& evse_connector_structure,
                          std::shared_ptr<DeviceModel> device_model, std::shared_ptr<DatabaseHandler> database_handler,
                          std::shared_ptr<MessageQueue<v2::MessageType>> message_queue,
                          const std::string& message_log_path, const std::shared_ptr<EvseSecurity> evse_security,
@@ -90,9 +90,9 @@ ChargePoint::ChargePoint(const std::map<int32_t, int32_t>& evse_connector_struct
     initialize(evse_connector_structure, message_log_path);
 }
 
-ChargePoint::ChargePoint(const std::map<int32_t, int32_t>& evse_connector_structure,
+ChargePoint::ChargePoint(const std::map<std::int32_t, std::int32_t>& evse_connector_structure,
                          std::unique_ptr<DeviceModelStorageInterface> device_model_storage_interface,
-                         const std::string& ocpp_main_path, const std::string& core_database_path,
+                         const std::string& /*ocpp_main_path*/, const std::string& core_database_path,
                          const std::string& sql_init_path, const std::string& message_log_path,
                          const std::shared_ptr<EvseSecurity> evse_security, const Callbacks& callbacks) :
     ChargePoint(
@@ -102,7 +102,7 @@ ChargePoint::ChargePoint(const std::map<int32_t, int32_t>& evse_connector_struct
         nullptr /* message_queue initialized in this constructor */, message_log_path, evse_security, callbacks) {
 }
 
-ChargePoint::ChargePoint(const std::map<int32_t, int32_t>& evse_connector_structure,
+ChargePoint::ChargePoint(const std::map<std::int32_t, std::int32_t>& evse_connector_structure,
                          const std::string& device_model_storage_address,
                          const std::string& device_model_migration_path, const std::string& device_model_config_path,
                          const std::string& ocpp_main_path, const std::string& core_database_path,
@@ -114,8 +114,7 @@ ChargePoint::ChargePoint(const std::map<int32_t, int32_t>& evse_connector_struct
                 ocpp_main_path, core_database_path, sql_init_path, message_log_path, evse_security, callbacks) {
 }
 
-ChargePoint::~ChargePoint() {
-}
+ChargePoint::~ChargePoint() = default;
 
 void ChargePoint::start(BootReasonEnum bootreason, bool start_connecting) {
     this->message_queue->start();
@@ -134,7 +133,7 @@ void ChargePoint::start(BootReasonEnum bootreason, bool start_connecting) {
         this->connectivity_manager->connect();
     }
 
-    const std::string firmware_version =
+    const auto firmware_version =
         this->device_model->get_value<std::string>(ControllerComponentVariables::FirmwareVersion);
 
     if (this->bootreason == BootReasonEnum::RemoteReset) {
@@ -180,15 +179,15 @@ void ChargePoint::on_network_disconnected(OCPPInterfaceEnum ocpp_interface) {
     this->connectivity_manager->on_network_disconnected(ocpp_interface);
 }
 
-void ChargePoint::on_firmware_update_status_notification(int32_t request_id,
+void ChargePoint::on_firmware_update_status_notification(std::int32_t request_id,
                                                          const FirmwareStatusEnum& firmware_update_status) {
     this->firmware_update->on_firmware_update_status_notification(request_id, firmware_update_status);
 }
 
-void ChargePoint::connect_websocket(std::optional<int32_t> network_profile_slot) {
+void ChargePoint::connect_websocket(std::optional<std::int32_t> network_profile_slot) {
     this->connectivity_manager->connect(network_profile_slot);
 }
-void ChargePoint::on_session_started(const int32_t evse_id, const int32_t connector_id) {
+void ChargePoint::on_session_started(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::PlugIn);
 }
 
@@ -198,11 +197,14 @@ ChargePoint::on_get_15118_ev_certificate_request(const Get15118EVCertificateRequ
     return this->security->on_get_15118_ev_certificate_request(request);
 }
 
-void ChargePoint::on_transaction_started(
-    const int32_t evse_id, const int32_t connector_id, const std::string& session_id, const DateTime& timestamp,
-    const TriggerReasonEnum trigger_reason, const MeterValue& meter_start, const std::optional<IdToken>& id_token,
-    const std::optional<IdToken>& group_id_token, const std::optional<int32_t>& reservation_id,
-    const std::optional<int32_t>& remote_start_id, const ChargingStateEnum charging_state) {
+void ChargePoint::on_transaction_started(const std::int32_t evse_id, const std::int32_t connector_id,
+                                         const std::string& session_id, const DateTime& timestamp,
+                                         const TriggerReasonEnum trigger_reason, const MeterValue& meter_start,
+                                         const std::optional<IdToken>& id_token,
+                                         const std::optional<IdToken>& group_id_token,
+                                         const std::optional<std::int32_t>& reservation_id,
+                                         const std::optional<std::int32_t>& remote_start_id,
+                                         const ChargingStateEnum charging_state) {
 
     // This allows us to move from "Reserved" to "Occupied". We dont need to check if a reservation was placed since if
     // a transaction starts, it is always consumed and just sets the reserved flag to false and triggers a
@@ -215,7 +217,7 @@ void ChargePoint::on_transaction_started(
                                               charging_state);
 }
 
-void ChargePoint::on_transaction_finished(const int32_t evse_id, const DateTime& timestamp,
+void ChargePoint::on_transaction_finished(const std::int32_t evse_id, const DateTime& timestamp,
                                           const MeterValue& meter_stop, const ReasonEnum reason,
                                           const TriggerReasonEnum trigger_reason,
                                           const std::optional<IdToken>& id_token,
@@ -225,11 +227,12 @@ void ChargePoint::on_transaction_finished(const int32_t evse_id, const DateTime&
                                                signed_meter_value, charging_state);
 }
 
-void ChargePoint::on_session_finished(const int32_t evse_id, const int32_t connector_id) {
+void ChargePoint::on_session_finished(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::PlugOut);
 }
 
-void ChargePoint::on_authorized(const int32_t evse_id, const int32_t connector_id, const IdToken& id_token) {
+void ChargePoint::on_authorized(const std::int32_t evse_id, const std::int32_t /*connector_id*/,
+                                const IdToken& id_token) {
     auto& evse = this->evse_manager->get_evse(evse_id);
     if (!evse.has_active_transaction()) {
         // nothing to report in case transaction is not yet open
@@ -250,32 +253,32 @@ void ChargePoint::on_authorized(const int32_t evse_id, const int32_t connector_i
                                              std::nullopt, std::nullopt, this->is_offline(), std::nullopt);
 }
 
-void ChargePoint::on_meter_value(const int32_t evse_id, const MeterValue& meter_value) {
+void ChargePoint::on_meter_value(const std::int32_t evse_id, const MeterValue& meter_value) {
     this->meter_values->on_meter_value(evse_id, meter_value);
 }
 
 void ChargePoint::configure_message_logging_format(const std::string& message_log_path) {
     auto log_formats = this->device_model->get_value<std::string>(ControllerComponentVariables::LogMessagesFormat);
-    bool log_to_console = log_formats.find("console") != log_formats.npos;
-    bool detailed_log_to_console = log_formats.find("console_detailed") != log_formats.npos;
-    bool log_to_file = log_formats.find("log") != log_formats.npos;
-    bool log_to_html = log_formats.find("html") != log_formats.npos;
-    bool log_raw =
+    const bool log_to_console = log_formats.find("console") != std::string::npos;
+    const bool detailed_log_to_console = log_formats.find("console_detailed") != std::string::npos;
+    const bool log_to_file = log_formats.find("log") != std::string::npos;
+    const bool log_to_html = log_formats.find("html") != std::string::npos;
+    const bool log_raw =
         this->device_model->get_optional_value<bool>(ControllerComponentVariables::LogMessagesRaw).value_or(false);
-    bool log_security = log_formats.find("security") != log_formats.npos;
-    bool session_logging = log_formats.find("session_logging") != log_formats.npos;
-    bool message_callback = log_formats.find("callback") != log_formats.npos;
+    const bool log_security = log_formats.find("security") != std::string::npos;
+    const bool session_logging = log_formats.find("session_logging") != std::string::npos;
+    const bool message_callback = log_formats.find("callback") != std::string::npos;
     std::function<void(const std::string& message, MessageDirection direction)> logging_callback = nullptr;
-    bool log_rotation =
+    const bool log_rotation =
         this->device_model->get_optional_value<bool>(ControllerComponentVariables::LogRotation).value_or(false);
-    bool log_rotation_date_suffix =
+    const bool log_rotation_date_suffix =
         this->device_model->get_optional_value<bool>(ControllerComponentVariables::LogRotationDateSuffix)
             .value_or(false);
-    uint64_t log_rotation_maximum_file_size =
-        this->device_model->get_optional_value<uint64_t>(ControllerComponentVariables::LogRotationMaximumFileSize)
+    const std::uint64_t log_rotation_maximum_file_size =
+        this->device_model->get_optional_value<std::uint64_t>(ControllerComponentVariables::LogRotationMaximumFileSize)
             .value_or(0);
-    uint64_t log_rotation_maximum_file_count =
-        this->device_model->get_optional_value<uint64_t>(ControllerComponentVariables::LogRotationMaximumFileCount)
+    const std::uint64_t log_rotation_maximum_file_count =
+        this->device_model->get_optional_value<std::uint64_t>(ControllerComponentVariables::LogRotationMaximumFileCount)
             .value_or(0);
 
     if (message_callback) {
@@ -291,7 +294,7 @@ void ChargePoint::configure_message_logging_format(const std::string& message_lo
             [this](ocpp::LogRotationStatus status) {
                 if (status == ocpp::LogRotationStatus::RotatedWithDeletion) {
                     const auto& security_event = ocpp::security_events::SECURITYLOGWASCLEARED;
-                    std::string tech_info = "Security log was rotated and an old log was deleted in the process";
+                    const std::string tech_info = "Security log was rotated and an old log was deleted in the process";
                     this->security->security_event_notification_req(CiString<50>(security_event),
                                                                     CiString<255>(tech_info), true,
                                                                     utils::is_critical(security_event));
@@ -304,37 +307,41 @@ void ChargePoint::configure_message_logging_format(const std::string& message_lo
     }
 }
 
-void ChargePoint::on_unavailable(const int32_t evse_id, const int32_t connector_id) {
+void ChargePoint::on_unavailable(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::Unavailable);
 }
 
-void ChargePoint::on_enabled(const int32_t evse_id, const int32_t connector_id) {
+void ChargePoint::on_enabled(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::UnavailableCleared);
 }
 
-void ChargePoint::on_faulted(const int32_t evse_id, const int32_t connector_id) {
+void ChargePoint::on_faulted(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::Error);
 }
 
-void ChargePoint::on_fault_cleared(const int32_t evse_id, const int32_t connector_id) {
+void ChargePoint::on_fault_cleared(const std::int32_t evse_id, const std::int32_t connector_id) {
     this->evse_manager->get_evse(evse_id).submit_event(connector_id, ConnectorEvent::ErrorCleared);
 }
 
-void ChargePoint::on_reserved(const int32_t evse_id, const int32_t connector_id) {
+void ChargePoint::on_reserved(const std::int32_t evse_id, const std::int32_t connector_id) {
     if (this->reservation != nullptr) {
         this->reservation->on_reserved(evse_id, connector_id);
     }
 }
 
-void ChargePoint::on_reservation_cleared(const int32_t evse_id, const int32_t connector_id) {
+void ChargePoint::on_reservation_cleared(const std::int32_t evse_id, const std::int32_t connector_id) {
     if (this->reservation != nullptr) {
         this->reservation->on_reservation_cleared(evse_id, connector_id);
     }
 }
 
-bool ChargePoint::on_charging_state_changed(const uint32_t evse_id, const ChargingStateEnum charging_state,
+bool ChargePoint::on_charging_state_changed(const std::uint32_t evse_id, const ChargingStateEnum charging_state,
                                             const TriggerReasonEnum trigger_reason) {
-    auto& evse = this->evse_manager->get_evse(evse_id);
+    if (evse_id > std::numeric_limits<std::int32_t>::max()) {
+        EVLOG_error << "Can not change charging state: evse id unknown " << evse_id;
+        return false;
+    }
+    auto& evse = this->evse_manager->get_evse(clamp_to<std::int32_t>(evse_id));
 
     std::unique_ptr<EnhancedTransaction>& transaction = evse.get_transaction();
     if (transaction == nullptr) {
@@ -354,7 +361,7 @@ bool ChargePoint::on_charging_state_changed(const uint32_t evse_id, const Chargi
     return true;
 }
 
-std::optional<std::string> ChargePoint::get_evse_transaction_id(int32_t evse_id) {
+std::optional<std::string> ChargePoint::get_evse_transaction_id(std::int32_t evse_id) {
     const auto& tx = this->evse_manager->get_evse(evse_id).get_transaction();
 
     if (tx != nullptr) {
@@ -373,7 +380,7 @@ void ChargePoint::on_event(const std::vector<EventData>& events) {
     this->diagnostics->notify_event_req(events);
 }
 
-void ChargePoint::on_log_status_notification(UploadLogStatusEnum status, int32_t requestId) {
+void ChargePoint::on_log_status_notification(UploadLogStatusEnum status, std::int32_t requestId) {
     LogStatusNotificationRequest request;
     request.status = status;
     request.requestId = requestId;
@@ -382,7 +389,7 @@ void ChargePoint::on_log_status_notification(UploadLogStatusEnum status, int32_t
     this->upload_log_status = status;
     this->upload_log_status_id = requestId;
 
-    ocpp::Call<LogStatusNotificationRequest> call(request);
+    const ocpp::Call<LogStatusNotificationRequest> call(request);
     this->message_dispatcher->dispatch_call(call);
 }
 
@@ -401,7 +408,7 @@ void ChargePoint::on_variable_changed(const SetVariableData& set_variable_data) 
     this->provisioning->on_variable_changed(set_variable_data);
 }
 
-void ChargePoint::on_reservation_status(const int32_t reservation_id, const ReservationUpdateStatusEnum status) {
+void ChargePoint::on_reservation_status(const std::int32_t reservation_id, const ReservationUpdateStatusEnum status) {
     if (reservation != nullptr) {
         this->reservation->on_reservation_status(reservation_id, status);
     }
@@ -411,7 +418,7 @@ void ChargePoint::on_ev_charging_needs(const NotifyEVChargingNeedsRequest& reque
     this->smart_charging->notify_ev_charging_needs_req(request);
 }
 
-void ChargePoint::initialize(const std::map<int32_t, int32_t>& evse_connector_structure,
+void ChargePoint::initialize(const std::map<std::int32_t, std::int32_t>& evse_connector_structure,
                              const std::string& message_log_path) {
     this->device_model->check_integrity(evse_connector_structure);
     this->database_handler->open_connection();
@@ -422,11 +429,9 @@ void ChargePoint::initialize(const std::map<int32_t, int32_t>& evse_connector_st
             if (this->connectivity_manager == nullptr or !this->connectivity_manager->is_websocket_connected() or
                 this->registration_status != RegistrationStatusEnum::Accepted) {
                 return false;
-            } else {
-                this->availability->status_notification_req(evse_id, connector_id, status,
-                                                            initiated_by_trigger_message);
-                return true;
             }
+            this->availability->status_notification_req(evse_id, connector_id, status, initiated_by_trigger_message);
+            return true;
         });
     if (this->callbacks.cs_effective_operative_status_changed_callback.has_value()) {
         this->component_state_manager->set_cs_effective_availability_changed_callback(
@@ -474,7 +479,7 @@ void ChargePoint::initialize(const std::map<int32_t, int32_t>& evse_connector_st
 
     this->connectivity_manager =
         std::make_unique<ConnectivityManager>(*this->device_model, this->evse_security, this->logging,
-                                              std::bind(&ChargePoint::message_callback, this, std::placeholders::_1));
+                                              [this](const std::string& message) { this->message_callback(message); });
 
     this->connectivity_manager->set_websocket_connected_callback(
         [this](int configuration_slot, const NetworkConnectionProfile& network_connection_profile,
@@ -486,7 +491,7 @@ void ChargePoint::initialize(const std::map<int32_t, int32_t>& evse_connector_st
             this->websocket_disconnected_callback(configuration_slot, network_connection_profile);
         });
     this->connectivity_manager->set_websocket_connection_failed_callback(
-        std::bind(&ChargePoint::websocket_connection_failed, this, std::placeholders::_1));
+        [this](ConnectionFailedReason reason) { this->websocket_connection_failed(reason); });
 
     if (this->message_queue == nullptr) {
         std::set<v2::MessageType> message_types_discard_for_queueing;
@@ -536,9 +541,15 @@ void ChargePoint::initialize(const std::map<int32_t, int32_t>& evse_connector_st
 
     if (device_model->get_optional_value<bool>(ControllerComponentVariables::ReservationCtrlrAvailable)
             .value_or(false)) {
-        this->reservation = std::make_unique<Reservation>(
-            *this->functional_block_context, this->callbacks.reserve_now_callback.value(),
-            this->callbacks.cancel_reservation_callback.value(), this->callbacks.is_reservation_for_token_callback);
+        if (this->callbacks.reserve_now_callback.has_value() and
+            this->callbacks.cancel_reservation_callback.has_value()) {
+            this->reservation = std::make_unique<Reservation>(
+                *this->functional_block_context, this->callbacks.reserve_now_callback.value(),
+                this->callbacks.cancel_reservation_callback.value(), this->callbacks.is_reservation_for_token_callback);
+        } else {
+            EVLOG_warning << "ReservationCtrlr available but no reserve_now_callback set, did not initialize "
+                             "reservation functional block";
+        }
     }
 
     this->authorization = std::make_unique<Authorization>(*this->functional_block_context);
@@ -551,10 +562,17 @@ void ChargePoint::initialize(const std::map<int32_t, int32_t>& evse_connector_st
 
     if (device_model->get_optional_value<bool>(ControllerComponentVariables::DisplayMessageCtrlrAvailable)
             .value_or(false)) {
-        this->display_message = std::make_unique<DisplayMessageBlock>(
-            *this->functional_block_context, this->callbacks.get_display_message_callback.value(),
-            this->callbacks.set_display_message_callback.value(),
-            this->callbacks.clear_display_message_callback.value());
+        if (this->callbacks.get_display_message_callback.has_value() and
+            this->callbacks.set_display_message_callback.has_value() and
+            this->callbacks.clear_display_message_callback.has_value()) {
+            this->display_message = std::make_unique<DisplayMessageBlock>(
+                *this->functional_block_context, this->callbacks.get_display_message_callback.value(),
+                this->callbacks.set_display_message_callback.value(),
+                this->callbacks.clear_display_message_callback.value());
+        } else {
+            EVLOG_warning << "DisplayMessageCtrlr available but some of its callbacks are not set, did not initialize "
+                             "display message functional block";
+        }
     }
 
     this->meter_values = std::make_unique<MeterValues>(*this->functional_block_context);
@@ -603,7 +621,7 @@ void ChargePoint::initialize(const std::map<int32_t, int32_t>& evse_connector_st
         this->callbacks.stop_transaction_callback, this->registration_status, this->upload_log_status,
         this->upload_log_status_id);
 
-    bool v2x_available =
+    const bool v2x_available =
         std::any_of(evse_connector_structure.begin(), evse_connector_structure.end(), [this](const auto& entry) {
             const auto& [evse, connectors] = entry;
             return this->device_model
@@ -962,7 +980,7 @@ void ChargePoint::message_callback(const std::string& message) {
                                                                                        enhanced_message.uniqueId);
                     this->message_dispatcher->dispatch_call_result(call_result);
                 } else {
-                    std::string const call_error_message =
+                    const std::string call_error_message =
                         "Received invalid MessageType: " +
                         conversions::messagetype_to_string(enhanced_message.messageType) +
                         " from CSMS while in state Pending";
@@ -977,7 +995,7 @@ void ChargePoint::message_callback(const std::string& message) {
             if (enhanced_message.messageType == MessageType::BootNotificationResponse) {
                 this->provisioning->handle_message(enhanced_message);
             } else if (enhanced_message.messageType == MessageType::TriggerMessage) {
-                Call<TriggerMessageRequest> call(json_message);
+                const Call<TriggerMessageRequest> call(json_message);
                 if (call.msg.requestedMessage == MessageTriggerEnum::BootNotification) {
                     this->handle_message(enhanced_message);
                 } else {
@@ -1135,9 +1153,9 @@ void ChargePoint::websocket_connection_failed(ConnectionFailedReason reason) {
         break;
     }
 }
-void ChargePoint::update_dm_availability_state(const int32_t evse_id, const int32_t connector_id,
+void ChargePoint::update_dm_availability_state(const std::int32_t evse_id, const std::int32_t connector_id,
                                                const ConnectorStatusEnum status) {
-    ComponentVariable charging_station = ControllerComponentVariables::ChargingStationAvailabilityState;
+    RequiredComponentVariable charging_station = ControllerComponentVariables::ChargingStationAvailabilityState;
     ComponentVariable evse_cv =
         EvseComponentVariables::get_component_variable(evse_id, EvseComponentVariables::AvailabilityState);
     ComponentVariable connector_cv = ConnectorComponentVariables::get_component_variable(
@@ -1203,15 +1221,15 @@ GetCompositeScheduleResponse ChargePoint::get_composite_schedule(const GetCompos
     return this->smart_charging->get_composite_schedule(request);
 }
 
-std::optional<CompositeSchedule> ChargePoint::get_composite_schedule(int32_t evse_id, std::chrono::seconds duration,
-                                                                     ChargingRateUnitEnum unit) {
+std::optional<CompositeSchedule>
+ChargePoint::get_composite_schedule(std::int32_t evse_id, std::chrono::seconds duration, ChargingRateUnitEnum unit) {
     if (this->smart_charging == nullptr) {
         return std::nullopt;
     }
     return this->smart_charging->get_composite_schedule(evse_id, duration, unit);
 }
 
-std::vector<CompositeSchedule> ChargePoint::get_all_composite_schedules(const int32_t duration_s,
+std::vector<CompositeSchedule> ChargePoint::get_all_composite_schedules(const std::int32_t duration_s,
                                                                         const ChargingRateUnitEnum& unit) {
     if (this->smart_charging == nullptr) {
         return {};
@@ -1220,7 +1238,7 @@ std::vector<CompositeSchedule> ChargePoint::get_all_composite_schedules(const in
 }
 
 std::optional<NetworkConnectionProfile>
-ChargePoint::get_network_connection_profile(const int32_t configuration_slot) const {
+ChargePoint::get_network_connection_profile(const std::int32_t configuration_slot) const {
     return this->connectivity_manager->get_network_connection_profile(configuration_slot);
 }
 

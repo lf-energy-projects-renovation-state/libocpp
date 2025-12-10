@@ -18,8 +18,8 @@ namespace v2 {
 /// \brief Contains a OCPP StartTransaction message
 struct RequestStartTransactionRequest : public ocpp::Message {
     IdToken idToken;
-    int32_t remoteStartId;
-    std::optional<int32_t> evseId;
+    std::int32_t remoteStartId;
+    std::optional<std::int32_t> evseId;
     std::optional<IdToken> groupIdToken;
     std::optional<ChargingProfile> chargingProfile;
     std::optional<CustomData> customData;
@@ -36,7 +36,8 @@ void to_json(json& j, const RequestStartTransactionRequest& k);
 void from_json(const json& j, RequestStartTransactionRequest& k);
 
 /// \brief Writes the string representation of the given RequestStartTransactionRequest \p k to the given output stream
-/// \p os \returns an output stream with the RequestStartTransactionRequest written to
+/// \p os
+/// \returns an output stream with the RequestStartTransactionRequest written to
 std::ostream& operator<<(std::ostream& os, const RequestStartTransactionRequest& k);
 
 /// \brief Contains a OCPP StartTransactionResponse message
@@ -58,7 +59,8 @@ void to_json(json& j, const RequestStartTransactionResponse& k);
 void from_json(const json& j, RequestStartTransactionResponse& k);
 
 /// \brief Writes the string representation of the given RequestStartTransactionResponse \p k to the given output stream
-/// \p os \returns an output stream with the RequestStartTransactionResponse written to
+/// \p os
+/// \returns an output stream with the RequestStartTransactionResponse written to
 std::ostream& operator<<(std::ostream& os, const RequestStartTransactionResponse& k);
 
 } // namespace v2

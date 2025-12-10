@@ -19,7 +19,7 @@ namespace v21 {
 /// \brief Contains a OCPP VatNumberValidation message
 struct VatNumberValidationRequest : public ocpp::Message {
     CiString<20> vatNumber;
-    std::optional<int32_t> evseId;
+    std::optional<std::int32_t> evseId;
     std::optional<CustomData> customData;
 
     /// \brief Provides the type of this VatNumberValidation message as a human readable string
@@ -34,7 +34,8 @@ void to_json(json& j, const VatNumberValidationRequest& k);
 void from_json(const json& j, VatNumberValidationRequest& k);
 
 /// \brief Writes the string representation of the given VatNumberValidationRequest \p k to the given output stream \p
-/// os \returns an output stream with the VatNumberValidationRequest written to
+/// os
+/// \returns an output stream with the VatNumberValidationRequest written to
 std::ostream& operator<<(std::ostream& os, const VatNumberValidationRequest& k);
 
 /// \brief Contains a OCPP VatNumberValidationResponse message
@@ -43,7 +44,7 @@ struct VatNumberValidationResponse : public ocpp::Message {
     GenericStatusEnum status;
     std::optional<Address> company;
     std::optional<StatusInfo> statusInfo;
-    std::optional<int32_t> evseId;
+    std::optional<std::int32_t> evseId;
     std::optional<CustomData> customData;
 
     /// \brief Provides the type of this VatNumberValidationResponse message as a human readable string
@@ -58,7 +59,8 @@ void to_json(json& j, const VatNumberValidationResponse& k);
 void from_json(const json& j, VatNumberValidationResponse& k);
 
 /// \brief Writes the string representation of the given VatNumberValidationResponse \p k to the given output stream \p
-/// os \returns an output stream with the VatNumberValidationResponse written to
+/// os
+/// \returns an output stream with the VatNumberValidationResponse written to
 std::ostream& operator<<(std::ostream& os, const VatNumberValidationResponse& k);
 
 } // namespace v21

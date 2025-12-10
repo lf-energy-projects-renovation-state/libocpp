@@ -42,7 +42,7 @@ void FirmwareUpdate::handle_message(const ocpp::EnhancedMessage<MessageType>& me
     }
 }
 
-void FirmwareUpdate::on_firmware_update_status_notification(int32_t request_id,
+void FirmwareUpdate::on_firmware_update_status_notification(std::int32_t request_id,
                                                             const FirmwareStatusEnum& firmware_update_status) {
     if (this->firmware_status == firmware_update_status) {
         if (request_id == -1 or
@@ -61,7 +61,7 @@ void FirmwareUpdate::on_firmware_update_status_notification(int32_t request_id,
         this->firmware_status_id = request_id;
     }
 
-    ocpp::Call<FirmwareStatusNotificationRequest> call(req);
+    const ocpp::Call<FirmwareStatusNotificationRequest> call(req);
     this->context.message_dispatcher.dispatch_call_async(call);
 
     if (req.status == FirmwareStatusEnum::Installed) {
@@ -93,7 +93,7 @@ void FirmwareUpdate::on_firmware_update_status_notification(int32_t request_id,
         if (transaction_active) {
             this->firmware_status = FirmwareStatusEnum::InstallScheduled;
             req.status = firmware_status;
-            ocpp::Call<FirmwareStatusNotificationRequest> call(req);
+            const ocpp::Call<FirmwareStatusNotificationRequest> call(req);
             this->context.message_dispatcher.dispatch_call_async(call);
         }
         this->change_all_connectors_to_unavailable_for_firmware_update();
@@ -113,7 +113,7 @@ void FirmwareUpdate::on_firmware_status_notification_request() {
         request.requestId = this->firmware_status_id;
     }
 
-    ocpp::Call<FirmwareStatusNotificationRequest> call(request);
+    const ocpp::Call<FirmwareStatusNotificationRequest> call(request);
     this->context.message_dispatcher.dispatch_call(call, true);
 }
 
@@ -143,7 +143,7 @@ void FirmwareUpdate::handle_firmware_update_req(Call<UpdateFirmwareRequest> call
         response = update_firmware_request_callback(msg);
     }
 
-    ocpp::CallResult<UpdateFirmwareResponse> call_result(response, call.uniqueId);
+    const ocpp::CallResult<UpdateFirmwareResponse> call_result(response, call.uniqueId);
     this->context.message_dispatcher.dispatch_call_result(call_result);
 
     if ((response.status == UpdateFirmwareStatusEnum::InvalidCertificate) or
@@ -194,10 +194,10 @@ void FirmwareUpdate::change_all_connectors_to_unavailable_for_firmware_update() 
 
 void FirmwareUpdate::restore_all_connector_states() {
     for (auto& evse : this->context.evse_manager) {
-        uint32_t number_of_connectors = evse.get_number_of_connectors();
+        const std::uint32_t number_of_connectors = evse.get_number_of_connectors();
 
-        for (uint32_t i = 1; i <= number_of_connectors; ++i) {
-            evse.restore_connector_operative_status(static_cast<int32_t>(i));
+        for (std::uint32_t i = 1; i <= number_of_connectors; ++i) {
+            evse.restore_connector_operative_status(static_cast<std::int32_t>(i));
         }
     }
 }

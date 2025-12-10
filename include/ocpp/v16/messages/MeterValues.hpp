@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2020 - 2024 Pionix GmbH and Contributors to EVerest
+// Copyright 2020 - 2025 Pionix GmbH and Contributors to EVerest
 // This code is generated using the generator in 'src/code_generator/common`, please do not edit manually
 
 #ifndef OCPP_V16_METERVALUES_HPP
@@ -16,9 +16,9 @@ namespace v16 {
 
 /// \brief Contains a OCPP MeterValues message
 struct MeterValuesRequest : public ocpp::Message {
-    int32_t connectorId;
+    std::int32_t connectorId;
     std::vector<MeterValue> meterValue;
-    std::optional<int32_t> transactionId;
+    std::optional<std::int32_t> transactionId;
 
     /// \brief Provides the type of this MeterValues message as a human readable string
     /// \returns the message type as a human readable string

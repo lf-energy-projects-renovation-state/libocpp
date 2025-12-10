@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// Copyright 2020 - 2024 Pionix GmbH and Contributors to EVerest
+// Copyright 2020 - 2025 Pionix GmbH and Contributors to EVerest
 // This code is generated using the generator in 'src/code_generator/common`, please do not edit manually
 
 #ifndef OCPP_V16_STATUSNOTIFICATION_HPP
@@ -17,7 +17,7 @@ namespace v16 {
 
 /// \brief Contains a OCPP StatusNotification message
 struct StatusNotificationRequest : public ocpp::Message {
-    int32_t connectorId;
+    std::int32_t connectorId;
     ChargePointErrorCode errorCode;
     ChargePointStatus status;
     std::optional<CiString<50>> info;
@@ -55,7 +55,8 @@ void to_json(json& j, const StatusNotificationResponse& k);
 void from_json(const json& j, StatusNotificationResponse& k);
 
 /// \brief Writes the string representation of the given StatusNotificationResponse \p k to the given output stream \p
-/// os \returns an output stream with the StatusNotificationResponse written to
+/// os
+/// \returns an output stream with the StatusNotificationResponse written to
 std::ostream& operator<<(std::ostream& os, const StatusNotificationResponse& k);
 
 } // namespace v16

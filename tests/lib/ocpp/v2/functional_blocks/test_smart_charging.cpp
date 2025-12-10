@@ -143,7 +143,7 @@ protected:
     ocpp::EvseSecurityMock evse_security;
     ComponentStateManagerMock component_state_manager;
     MockFunction<void()> set_charging_profiles_callback_mock;
-    MockFunction<RequestStartStopStatusEnum(const int32_t evse_id, const ReasonEnum& stop_reason)>
+    MockFunction<RequestStartStopStatusEnum(const std::int32_t evse_id, const ReasonEnum& stop_reason)>
         stop_transaction_callback_mock;
     std::unique_ptr<FunctionalBlockContext> functional_block_context;
     TestSmartCharging smart_charging = create_smart_charging();
@@ -317,7 +317,7 @@ TEST_F(SmartChargingTest, K01_ValidateChargingStationMaxProfile_NotChargingStati
     auto profile = create_charging_profile(DEFAULT_PROFILE_ID, ChargingProfilePurposeEnum::TxDefaultProfile,
                                            create_charge_schedule(ChargingRateUnitEnum::A));
 
-    auto sut = smart_charging.validate_charging_station_max_profile(profile, STATION_WIDE_ID);
+    auto sut = validate_charging_station_max_profile(profile, STATION_WIDE_ID);
 
     EXPECT_THAT(sut, testing::Eq(ProfileValidationResultEnum::InvalidProfileType));
 }
@@ -328,7 +328,7 @@ TEST_F(SmartChargingTest, K04FR03_ValidateChargingStationMaxProfile_EvseIDgt0_In
     auto profile = create_charging_profile(DEFAULT_PROFILE_ID, ChargingProfilePurposeEnum::ChargingStationMaxProfile,
                                            create_charge_schedule(ChargingRateUnitEnum::A, periods));
 
-    auto sut = smart_charging.validate_charging_station_max_profile(profile, EVSE_ID_1);
+    auto sut = validate_charging_station_max_profile(profile, EVSE_ID_1);
 
     EXPECT_THAT(sut, testing::Eq(ProfileValidationResultEnum::ChargingStationMaxProfileEvseIdGreaterThanZero));
 }
@@ -337,7 +337,7 @@ TEST_F(SmartChargingTest, K01FR38_ChargingProfilePurposeIsChargingStationMaxProf
     auto profile = create_charging_profile(DEFAULT_PROFILE_ID, ChargingProfilePurposeEnum::ChargingStationMaxProfile,
                                            create_charge_schedule(ChargingRateUnitEnum::A));
 
-    auto sut = smart_charging.validate_charging_station_max_profile(profile, STATION_WIDE_ID);
+    auto sut = validate_charging_station_max_profile(profile, STATION_WIDE_ID);
 
     EXPECT_THAT(sut, testing::Eq(ProfileValidationResultEnum::Valid));
 }
@@ -347,7 +347,7 @@ TEST_F(SmartChargingTest, K01FR38_ChargingProfilePurposeIsChargingStationMaxProf
                                            create_charge_schedule(ChargingRateUnitEnum::A), {},
                                            ChargingProfileKindEnum::Recurring);
 
-    auto sut = smart_charging.validate_charging_station_max_profile(profile, STATION_WIDE_ID);
+    auto sut = validate_charging_station_max_profile(profile, STATION_WIDE_ID);
 
     EXPECT_THAT(sut, testing::Eq(ProfileValidationResultEnum::Valid));
 }
@@ -357,7 +357,7 @@ TEST_F(SmartChargingTest, K01FR38_ChargingProfilePurposeIsChargingStationMaxProf
         create_charging_profile(DEFAULT_PROFILE_ID, ChargingProfilePurposeEnum::ChargingStationMaxProfile,
                                 create_charge_schedule(ChargingRateUnitEnum::A), {}, ChargingProfileKindEnum::Relative);
 
-    auto sut = smart_charging.validate_charging_station_max_profile(profile, STATION_WIDE_ID);
+    auto sut = validate_charging_station_max_profile(profile, STATION_WIDE_ID);
 
     EXPECT_THAT(sut, testing::Eq(ProfileValidationResultEnum::ChargingStationMaxProfileCannotBeRelative));
 }
@@ -1260,7 +1260,7 @@ TEST_F(SmartChargingTest, K09_GetChargingProfiles_ProfileId) {
     auto profiles = database_handler->get_all_charging_profiles();
     EXPECT_THAT(profiles, testing::SizeIs(2));
 
-    std::vector<int32_t> requested_profile_ids{1};
+    std::vector<std::int32_t> requested_profile_ids{1};
     auto reported_profiles = smart_charging.get_reported_profiles(create_get_charging_profile_request(
         DEFAULT_REQUEST_ID, create_charging_profile_criteria(std::nullopt, requested_profile_ids)));
     EXPECT_THAT(reported_profiles, testing::SizeIs(1));
@@ -1364,7 +1364,7 @@ TEST_F(SmartChargingTest, K09_GetChargingProfiles_ReportsProfileWithSource) {
     auto response = smart_charging.conform_validate_and_add_profile(profile, DEFAULT_EVSE_ID, charging_limit_source);
     EXPECT_THAT(response.status, testing::Eq(ChargingProfileStatusEnum::Accepted));
 
-    std::vector<int32_t> requested_profile_ids{1};
+    std::vector<std::int32_t> requested_profile_ids{1};
     auto reported_profiles = smart_charging.get_reported_profiles(create_get_charging_profile_request(
         DEFAULT_REQUEST_ID, create_charging_profile_criteria(std::nullopt, requested_profile_ids)));
     EXPECT_THAT(reported_profiles, testing::SizeIs(1));
@@ -1556,7 +1556,7 @@ TEST_F(SmartChargingTest, K01_ValidateChargingStationMaxProfile_AllowsExistingMa
     auto res = smart_charging.conform_validate_and_add_profile(profile, STATION_WIDE_ID);
     ASSERT_THAT(res.status, testing::Eq(ChargingProfileStatusEnum::Accepted));
 
-    auto sut = smart_charging.validate_charging_station_max_profile(profile, STATION_WIDE_ID);
+    auto sut = validate_charging_station_max_profile(profile, STATION_WIDE_ID);
 
     EXPECT_THAT(sut, testing::Eq(ProfileValidationResultEnum::Valid));
 }
